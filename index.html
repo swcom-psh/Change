@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자리바꾸기 프로그램</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for Neo-Brutalism vibe -->
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1>자리바꾸기 프로그램</h1>
+        </header>
+
+        <section class="controls">
+            <div class="control-card">
+                <h2>1. 데이터 업로드</h2>
+                <input type="file" id="csvInput" accept=".csv">
+                <p class="help-text">CSV 파일 (.csv)을 선택해주세요.</p>
+            </div>
+            <div class="control-card">
+                <h2>2. 배치 실행</h2>
+                <div class="button-group">
+                    <button id="generateBtn" class="btn-primary">자리 배치하기</button>
+                    <button id="downloadBtn" class="btn-secondary">이미지 저장</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="classroom">
+            <div class="teacher-desk">교탁</div>
+            <div class="seating-grid" id="seatingGrid">
+                <!-- Seats will be generated here -->
+                <div class="empty-state">데이터를 업로드하고<br>배치하기를 눌러주세요!</div>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
