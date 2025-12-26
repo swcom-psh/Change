@@ -3,11 +3,14 @@
     --card-bg: #ffffff;
     --border-color: #000000;
     --shadow-color: #000000;
-    --primary-color: #3D5AFE; /* Blue */
-    --accent-color: #FF5A5F; /* Red */
-    --highlight-color: #FFC107; /* Yellow */
+    --primary-color: #3D5AFE;
+    /* Blue */
+    --accent-color: #FF5A5F;
+    /* Red */
+    --highlight-color: #FFC107;
+    /* Yellow */
     --text-color: #000000;
-    
+
     --border-width: 3px;
     --shadow-offset: 5px;
 }
@@ -24,7 +27,9 @@ body {
     padding: 20px;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
     font-family: 'Black Han Sans', sans-serif;
     margin: 0;
 }
@@ -208,11 +213,16 @@ button:active {
 }
 
 /* Row Indicators (Optional visual cue) */
-.seat[data-row="0"], .seat[data-row="1"] { /* Front */
+.seat[data-row="0"],
+.seat[data-row="1"] {
+    /* Front */
     border-color: #006064;
     background-color: #E0F7FA;
 }
-.seat[data-row="4"], .seat[data-row="5"] { /* Back */
+
+.seat[data-row="4"],
+.seat[data-row="5"] {
+    /* Back */
     border-color: #BF360C;
     background-color: #FBE9E7;
 }
@@ -221,12 +231,15 @@ button:active {
     .controls {
         grid-template-columns: 1fr;
     }
+
     .seating-grid {
         gap: 10px;
     }
+
     .seat {
         padding: 5px;
     }
+
     .student-name {
         font-size: 1rem;
     }

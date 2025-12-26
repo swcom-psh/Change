@@ -348,7 +348,10 @@ function handleDownload() {
         alert("저장할 배치도가 없습니다.");
         return;
     }
-    html2canvas(document.querySelector('.classroom')).then(canvas => {
+    html2canvas(document.querySelector('.classroom'), {
+        backgroundColor: "#ffffff",
+        scale: 2
+    }).then(canvas => {
         const link = document.createElement('a');
         link.download = '자리배치도.png';
         link.href = canvas.toDataURL();
