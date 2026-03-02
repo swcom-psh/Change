@@ -5,9 +5,9 @@ const downloadBtn = document.getElementById('downloadBtn');
 const seatingGrid = document.getElementById('seatingGrid');
 
 // Configuration
-const ROWS = 6;
-const COLS = 5;
-const TOTAL_SEATS = ROWS * COLS;
+const ROWS = 5; // We'll manage the layout specifically: R1: 2 seats, R2-R5: 6 seats each
+const COLS = 6;
+const TOTAL_SEATS = 26;
 
 // Algorithm Constants
 const SCORE_LIKE = 20;
@@ -29,38 +29,13 @@ async function handleGenerate() {
         if (file) {
             text = await file.text();
         } else {
-            // 파일을 선택하지 않은 경우 기본 파일 사용 (임베디드 데이터)
-            text = `번호,이름,같이앉고싶은친구,기피하는친구,희망고정자리,이유
-1,아이유,유인나,,앞자리,시력
-2,유인나,아이유,,,
-3,강호동,이수근,,뒷자리,덩치
-4,이수근,강호동,은지원,,
-5,은지원,,,앞자리,집중력
-6,박명수,정준하,,,
-7,정준하,박명수,,,
-8,유재석,조세호|하하,,,
-9,조세호,유재석,남창희,,
-10,남창희,조세호,,,
-11,하하,유재석,노홍철,,
-12,노홍철,,,뒷자리,다리저림
-13,정형돈,데프콘,,,
-14,데프콘,정형돈,,,
-15,김종국,하하,,뒷자리,운동
-16,송지효,김종국|이광수,,,
-17,이광수,,김종국,,
-18,지석진,,,앞자리,노안
-19,양세찬,전소민,,,
-20,전소민,양세찬,,,
-21,김희철,민경훈,,,
-22,민경훈,김희철,,,
-23,서장훈,이수근,,뒷자리,키
-24,김영철,,,뒷자리,시끄러움
-25,이상민,김준호,,,
-26,김준호,킴지민,,,
-27,김지민,김준호,,,
-28,박나래,장도연,,,
-29,장도연,박나래,,뒷자리,키
-30,기안84,이시언,,,`;
+            // 파일을 선택하지 않은 경우 기본 파일 사용
+            const response = await fetch('student_sample_data.csv');
+            if (response.ok) {
+                text = await response.text();
+            } else {
+                throw new Error("기본 데이터 파일을 찾을 수 없습니다.");
+            }
         }
 
         students = parseCSV(text);
@@ -125,6 +100,8 @@ function isNeighbor(i, j) {
 
     // Adjacent (Horizontal, Vertical, Diagonal)
     // Distance 1 in Grid (Chebyshev distance = 1)
+    // Special handling for row 0 (2 seats) if we treat it as physically centered
+    // For simplicity, we can keep the logic based on r,c.
     return rDiff <= 1 && cDiff <= 1 && !(rDiff === 0 && cDiff === 0);
 }
 
@@ -177,16 +154,19 @@ function optimizeSeating(studentList) {
     });
 
     // Indexes for regions
-    const frontIndices = []; // Rows 0,1
-    const backIndices = [];  // Rows 4,5
-    const middleIndices = []; // Rows 2,3 (or leftovers)
+    // Row 0: 0,1 (These will be visually middle-aligned in 6-col grid)
+    // Row 1-4: 6 seats each
 
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            const idx = r * COLS + c;
-            if (r < 2) frontIndices.push(idx);
-            else if (r >= 4) backIndices.push(idx);
-            else middleIndices.push(idx);
+    for (let i = 0; i < TOTAL_SEATS; i++) {
+        let row;
+        if (i < 2) {
+            row = 0;
+            frontIndices.push(i);
+        } else {
+            row = Math.floor((i - 2) / 6) + 1;
+            if (row === 1) frontIndices.push(i); // Count row 1 as front too for logic if needed
+            else if (row >= 4) backIndices.push(i);
+            else middleIndices.push(i);
         }
     }
 
@@ -203,7 +183,6 @@ function optimizeSeating(studentList) {
             if (available.length > 0) {
                 seats[available.pop()] = s;
             } else {
-                // Overflow (Shouldn't happen with valid constraint counts, but fallback to any empty)
                 normalGroup.push(s);
             }
         });
@@ -268,10 +247,16 @@ function optimizeSeating(studentList) {
 
 function canBeAt(student, index) {
     if (!student) return true; // Empty slot can be anywhere
-    const row = Math.floor(index / COLS);
+
+    let row;
+    if (index < 2) {
+        row = 0;
+    } else {
+        row = Math.floor((index - 2) / 6) + 1;
+    }
 
     if (student.fixed.includes('앞')) {
-        return row < 2;
+        return row <= 1;
     }
     if (student.fixed.includes('뒤')) {
         return row >= 4;
@@ -290,7 +275,16 @@ async function renderSeating(seats) {
     for (let i = 0; i < TOTAL_SEATS; i++) {
         const seatDiv = document.createElement('div');
         seatDiv.className = 'seat';
-        const row = Math.floor(i / COLS);
+
+        let row, col;
+        if (i < 2) {
+            row = 0;
+            col = i + 2; // Center row 0 (positions 2, 3 in a 6-col grid)
+            seatDiv.style.gridColumn = col + 1;
+        } else {
+            row = Math.floor((i - 2) / 6) + 1;
+            col = (i - 2) % 6;
+        }
         seatDiv.setAttribute('data-row', row);
 
         const numberDiv = document.createElement('div');
@@ -305,7 +299,7 @@ async function renderSeating(seats) {
         seatDiv.appendChild(nameDiv);
 
         // Visual Backgrounds for zones
-        if (row < 2) seatDiv.style.backgroundColor = "#e8f5e9";
+        if (row <= 1) seatDiv.style.backgroundColor = "#e8f5e9";
         if (row >= 4) seatDiv.style.backgroundColor = "#ffebee";
 
         seatingGrid.appendChild(seatDiv);
