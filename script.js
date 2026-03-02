@@ -2,24 +2,73 @@
 const csvInput = document.getElementById('csvInput');
 const generateBtn = document.getElementById('generateBtn');
 const downloadBtn = document.getElementById('downloadBtn');
+const editBtn = document.getElementById('editBtn'); // New: Edit Layout button
 const seatingGrid = document.getElementById('seatingGrid');
 
 // Configuration
-const ROWS = 5; // We'll manage the layout specifically: R1: 2 seats, R2-R5: 6 seats each
-const COLS = 6;
-const TOTAL_SEATS = 26;
+const GRID_ROWS = 7;
+const GRID_COLS = 6;
+let TOTAL_SEATS = 26;
 
 // Algorithm Constants
 const SCORE_LIKE = 20;
 const SCORE_DISLIKE = -100;
 const ITERATIONS = 20000; // Optimization attempts
 
+// Default Data Fallback (for local file:// protocol compatibility)
+const DEFAULT_STUDENT_CSV = `번호,이름,같이앉고싶은친구,기피하는친구,희망고정자리,이유
+1,권지훈
+2,김다율
+3,김서윤
+4,김선민
+5,김아린
+6,김은비
+7,김태민
+8,김하빈
+9,박기령
+10,박소현
+11,박자희
+12,박재우
+13,서민주
+14,안성은
+15,이서후
+16,이온유
+17,이재인
+18,이채원
+19,이효린
+20,장주영
+21,전수빈
+22,전승민
+23,조문준
+24,차윤우
+25,한소희
+26,홍예은`;
+
 // State
 let students = [];
+let activeSeats = []; // Array of {idx, row, col}
+let isEditMode = false;
+
+// Initialize Default Layout (2-6-6-6-6)
+function initDefaultLayout() {
+    activeSeats = [];
+    // Row 0: 2 seats (indices 2, 3 in 6-col grid)
+    activeSeats.push({ idx: 2, r: 0, c: 2 });
+    activeSeats.push({ idx: 3, r: 0, c: 3 });
+    // Rows 1-4: 6 seats each
+    for (let r = 1; r <= 4; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+            activeSeats.push({ idx: r * GRID_COLS + c, r: r, c: c });
+        }
+    }
+    TOTAL_SEATS = activeSeats.length;
+}
+initDefaultLayout();
 
 // Event Listeners
 generateBtn.addEventListener('click', handleGenerate);
 downloadBtn.addEventListener('click', handleDownload);
+editBtn.addEventListener('click', toggleEditMode);
 
 async function handleGenerate() {
     let text = "";
@@ -27,18 +76,29 @@ async function handleGenerate() {
 
     try {
         if (file) {
-            text = await file.text();
-        } else {
-            // 파일을 선택하지 않은 경우 기본 파일 사용
-            const response = await fetch('student_sample_data.csv');
-            if (response.ok) {
-                text = await response.text();
+            const fileName = file.name.toLowerCase();
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                students = await parseXLSX(file);
             } else {
-                throw new Error("기본 데이터 파일을 찾을 수 없습니다.");
+                text = await file.text();
+                students = parseCSV(text);
             }
+        } else {
+            // 파일을 선택하지 않은 경우 기본 파일 사용 시도
+            try {
+                const response = await fetch('student_sample_data.csv');
+                if (response.ok) {
+                    text = await response.text();
+                } else {
+                    text = DEFAULT_STUDENT_CSV;
+                }
+            } catch (e) {
+                // Fetch failed (likely file:// protocol restriction), use fallback
+                console.warn("Fetch failed, using local fallback data.");
+                text = DEFAULT_STUDENT_CSV;
+            }
+            students = parseCSV(text);
         }
-
-        students = parseCSV(text);
 
         if (students.length === 0) {
             alert("데이터가 없습니다.");
@@ -48,6 +108,8 @@ async function handleGenerate() {
         // Show loading state (simple)
         generateBtn.textContent = "계산 중...";
         generateBtn.disabled = true;
+
+        if (isEditMode) toggleEditMode(); // Exit edit mode when generating
 
         // Allow UI to update before blocking
         setTimeout(() => {
@@ -72,46 +134,71 @@ function parseCSV(text) {
     lines.shift();
 
     return lines.map((line, index) => {
-        // Handle CSV split more robustly (ignoring commas in quotes if needed, but simple split for now)
         const cols = line.split(',').map(c => c.trim());
-
-        // CSV: 번호,이름,같이앉고싶은친구,기피하는친구,희망고정자리,이유
         return {
-            id: index, // Internal ID
+            id: index,
             displayNum: cols[0],
             name: cols[1],
             likes: cols[2] ? cols[2].split(/[| ]+/).filter(Boolean) : [],
             dislikes: cols[3] ? cols[3].split(/[| ]+/).filter(Boolean) : [],
-            fixed: cols[4] || "", // '앞자리', '뒷자리'
+            fixed: cols[4] || "",
             reason: cols[5] || ""
         };
     });
 }
 
-// Check adjacency between two seat indices
-function isNeighbor(i, j) {
-    const r1 = Math.floor(i / COLS);
-    const c1 = i % COLS;
-    const r2 = Math.floor(j / COLS);
-    const c2 = j % COLS;
+function parseXLSX(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-    const rDiff = Math.abs(r1 - r2);
-    const cDiff = Math.abs(c1 - c2);
+                // jsonData[0] is header row
+                const body = jsonData.slice(1).filter(row => row.length > 0 && row[1]);
+
+                const parsed = body.map((cols, index) => {
+                    return {
+                        id: index,
+                        displayNum: cols[0] || (index + 1),
+                        name: String(cols[1] || "").trim(),
+                        likes: cols[2] ? String(cols[2]).split(/[| ]+/).filter(Boolean) : [],
+                        dislikes: cols[3] ? String(cols[3]).split(/[| ]+/).filter(Boolean) : [],
+                        fixed: cols[4] || "",
+                        reason: cols[5] || ""
+                    };
+                });
+                resolve(parsed);
+            } catch (err) {
+                reject(err);
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+// Check adjacency between two seat objects
+function isNeighbor(s1, s2) {
+    if (!s1 || !s2) return false;
+    const rDiff = Math.abs(s1.r - s2.r);
+    const cDiff = Math.abs(s1.c - s2.c);
 
     // Adjacent (Horizontal, Vertical, Diagonal)
-    // Distance 1 in Grid (Chebyshev distance = 1)
-    // Special handling for row 0 (2 seats) if we treat it as physically centered
-    // For simplicity, we can keep the logic based on r,c.
     return rDiff <= 1 && cDiff <= 1 && !(rDiff === 0 && cDiff === 0);
 }
 
 function calculateScore(seats) {
     let score = 0;
 
-    // Map Name to Seat Index for fast lookup
-    const nameToSeat = {};
-    seats.forEach((s, idx) => {
-        if (s) nameToSeat[s.name] = idx;
+    // Map Name to seat index in the current 'seats' array
+    const nameToIdx = {};
+    seats.forEach((student, idx) => {
+        if (student) nameToIdx[student.name] = idx;
     });
 
     seats.forEach((student, idx) => {
@@ -119,8 +206,9 @@ function calculateScore(seats) {
 
         // Likes
         student.likes.forEach(friendName => {
-            if (nameToSeat[friendName] !== undefined) {
-                if (isNeighbor(idx, nameToSeat[friendName])) {
+            if (nameToIdx[friendName] !== undefined) {
+                const friendIdx = nameToIdx[friendName];
+                if (isNeighbor(activeSeats[idx], activeSeats[friendIdx])) {
                     score += SCORE_LIKE;
                 }
             }
@@ -128,15 +216,16 @@ function calculateScore(seats) {
 
         // Dislikes
         student.dislikes.forEach(enemyName => {
-            if (nameToSeat[enemyName] !== undefined) {
-                if (isNeighbor(idx, nameToSeat[enemyName])) {
+            if (nameToIdx[enemyName] !== undefined) {
+                const enemyIdx = nameToIdx[enemyName];
+                if (isNeighbor(activeSeats[idx], activeSeats[enemyIdx])) {
                     score += SCORE_DISLIKE;
                 }
             }
         });
     });
 
-    return score; // Divide by 2 strictly speaking as pairs are counted twice, but fine for optimization
+    return score;
 }
 
 function optimizeSeating(studentList) {
@@ -153,29 +242,21 @@ function optimizeSeating(studentList) {
         else normalGroup.push(s);
     });
 
-    // Indexes for regions
-    // Row 0: 0,1 (These will be visually middle-aligned in 6-col grid)
-    // Row 1-4: 6 seats each
+    // Indexes for regions (based on row relative to max row)
+    const maxRow = activeSeats.length > 0 ? Math.max(...activeSeats.map(s => s.r)) : 0;
+    const frontIndices = [];
+    const backIndices = [];
+    const middleIndices = [];
 
-    for (let i = 0; i < TOTAL_SEATS; i++) {
-        let row;
-        if (i < 2) {
-            row = 0;
-            frontIndices.push(i);
-        } else {
-            row = Math.floor((i - 2) / 6) + 1;
-            if (row === 1) frontIndices.push(i); // Count row 1 as front too for logic if needed
-            else if (row >= 4) backIndices.push(i);
-            else middleIndices.push(i);
-        }
-    }
+    activeSeats.forEach((seat, idx) => {
+        if (seat.r <= 1) frontIndices.push(idx);
+        else if (seat.r >= maxRow - 1) backIndices.push(idx);
+        else middleIndices.push(idx);
+    });
 
-    // Assign Fixed Seats Randomly within their zones first
     // Helper to fill array
     function fillZone(zoneIndices, group) {
-        // Shuffle group
         group.sort(() => Math.random() - 0.5);
-        // Shuffle available seats
         const available = [...zoneIndices].filter(i => seats[i] === null);
         available.sort(() => Math.random() - 0.5);
 
@@ -191,26 +272,22 @@ function optimizeSeating(studentList) {
     fillZone(frontIndices, frontGroup);
     fillZone(backIndices, backGroup);
 
-    // Fill remaining seats with normal group
-    // Gather all empty seats
+    // Fill remaining
     let emptyIndices = seats.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
-    // Shuffle normal group
     normalGroup.sort(() => Math.random() - 0.5);
 
     normalGroup.forEach(s => {
         if (emptyIndices.length > 0) {
-            // Pick a random empty slot
             const rndIdx = Math.floor(Math.random() * emptyIndices.length);
             seats[emptyIndices[rndIdx]] = s;
             emptyIndices.splice(rndIdx, 1);
         }
     });
 
-    // 2. Optimization Loop (Hill Climbing / Simulated Annealing Lite)
+    // 2. Optimization Loop (Hill Climbing)
     let currentScore = calculateScore(seats);
 
     for (let i = 0; i < ITERATIONS; i++) {
-        // Pick two random indices
         const idx1 = Math.floor(Math.random() * TOTAL_SEATS);
         const idx2 = Math.floor(Math.random() * TOTAL_SEATS);
 
@@ -219,13 +296,10 @@ function optimizeSeating(studentList) {
         const s1 = seats[idx1];
         const s2 = seats[idx2];
 
-        // Check Constraints before swap
-        // Can s1 go to idx2? Can s2 go to idx1?
         if (!canBeAt(s1, idx2) || !canBeAt(s2, idx1)) {
             continue;
         }
 
-        // Try Swap
         seats[idx1] = s2;
         seats[idx2] = s1;
 
@@ -233,10 +307,7 @@ function optimizeSeating(studentList) {
 
         if (newScore > currentScore) {
             currentScore = newScore;
-            // Keep swap
         } else {
-            // Revert swap (Standard Hill Climbing - reject if worse)
-            // Or accept with probability if Simulated Annealing (skipping for simplicity/speed)
             seats[idx1] = s1;
             seats[idx2] = s2;
         }
@@ -246,46 +317,81 @@ function optimizeSeating(studentList) {
 }
 
 function canBeAt(student, index) {
-    if (!student) return true; // Empty slot can be anywhere
-
-    let row;
-    if (index < 2) {
-        row = 0;
-    } else {
-        row = Math.floor((index - 2) / 6) + 1;
-    }
+    if (!student) return true;
+    const seat = activeSeats[index];
+    const maxRow = activeSeats.length > 0 ? Math.max(...activeSeats.map(s => s.r)) : 0;
 
     if (student.fixed.includes('앞')) {
-        return row <= 1;
+        return seat.r <= 1;
     }
     if (student.fixed.includes('뒤')) {
-        return row >= 4;
+        return seat.r >= maxRow - 1;
     }
     return true;
 }
 
+function toggleEditMode() {
+    isEditMode = !isEditMode;
+    editBtn.textContent = isEditMode ? "수정 완료" : "자리 구조 수정";
+    editBtn.classList.toggle('btn-active', isEditMode);
+
+    if (isEditMode) {
+        renderEditGrid();
+    } else {
+        // Prepare for normal mode
+        seatingGrid.innerHTML = '<div class="empty-state">배치 완료 후 결과가 표시됩니다.</div>';
+    }
+}
+
+function renderEditGrid() {
+    seatingGrid.innerHTML = '';
+    const seatIdxs = new Set(activeSeats.map(s => s.idx));
+
+    for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+            const idx = r * GRID_COLS + c;
+            const cell = document.createElement('div');
+            cell.className = 'seat-edit-cell';
+            if (seatIdxs.has(idx)) cell.classList.add('active');
+
+            cell.addEventListener('click', () => {
+                if (seatIdxs.has(idx)) {
+                    activeSeats = activeSeats.filter(s => s.idx !== idx);
+                    cell.classList.remove('active');
+                    seatIdxs.delete(idx);
+                } else {
+                    activeSeats.push({ idx, r, c });
+                    cell.classList.add('active');
+                    seatIdxs.add(idx);
+                }
+                TOTAL_SEATS = activeSeats.length;
+            });
+
+            seatingGrid.appendChild(cell);
+        }
+    }
+}
 
 // Render Function (with Animation)
 async function renderSeating(seats) {
-    // 1. Setup Grid first (Empty seats with numbers)
-    seatingGrid.innerHTML = '';
+    if (isEditMode) toggleEditMode();
 
-    // Create all seat elements in "Empty" or "Waiting" state
+    // 1. Setup Grid first
+    seatingGrid.innerHTML = '';
     const seatElements = [];
+
+    // Sort activeSeats for consistent display if modified
+    activeSeats.sort((a, b) => a.idx - b.idx);
+    const maxRow = activeSeats.length > 0 ? Math.max(...activeSeats.map(s => s.r)) : 0;
+
     for (let i = 0; i < TOTAL_SEATS; i++) {
+        const seat = activeSeats[i];
         const seatDiv = document.createElement('div');
         seatDiv.className = 'seat';
 
-        let row, col;
-        if (i < 2) {
-            row = 0;
-            col = i + 2; // Center row 0 (positions 2, 3 in a 6-col grid)
-            seatDiv.style.gridColumn = col + 1;
-        } else {
-            row = Math.floor((i - 2) / 6) + 1;
-            col = (i - 2) % 6;
-        }
-        seatDiv.setAttribute('data-row', row);
+        seatDiv.style.gridRow = seat.r + 1;
+        seatDiv.style.gridColumn = seat.c + 1;
+        seatDiv.setAttribute('data-row', seat.r);
 
         const numberDiv = document.createElement('div');
         numberDiv.className = 'seat-number';
@@ -293,14 +399,13 @@ async function renderSeating(seats) {
 
         const nameDiv = document.createElement('div');
         nameDiv.className = 'student-name';
-        nameDiv.innerText = ""; // Initially empty
+        nameDiv.innerText = "";
 
         seatDiv.appendChild(numberDiv);
         seatDiv.appendChild(nameDiv);
 
-        // Visual Backgrounds for zones
-        if (row <= 1) seatDiv.style.backgroundColor = "#e8f5e9";
-        if (row >= 4) seatDiv.style.backgroundColor = "#ffebee";
+        if (seat.r <= 1) seatDiv.style.backgroundColor = "#e8f5e9";
+        if (seat.r >= maxRow - 1) seatDiv.style.backgroundColor = "#ffebee";
 
         seatingGrid.appendChild(seatDiv);
         seatElements.push({ div: seatDiv, nameDiv: nameDiv });
@@ -310,54 +415,36 @@ async function renderSeating(seats) {
     generateBtn.disabled = true;
     generateBtn.textContent = "발표 중...";
 
-    // Helper for Roulette Effect
     const runRoulette = (element, finalName, duration) => {
         return new Promise(resolve => {
             const possibleNames = students.map(s => s.name);
-            let startTime = Date.now();
-
-            // Fast text change
             let interval = setInterval(() => {
                 element.innerText = possibleNames[Math.floor(Math.random() * possibleNames.length)];
-                element.style.color = "#888"; // Dim color during spin
+                element.style.color = "#888";
             }, 50);
 
-            // Stop after duration
             setTimeout(() => {
                 clearInterval(interval);
                 element.innerText = finalName;
-                element.style.color = "#000"; // Black color for result
+                element.style.color = "#000";
                 element.style.fontWeight = "bold";
-
-                // Pop effect
                 element.parentElement.style.transform = "scale(1.1)";
                 element.parentElement.style.zIndex = "100";
                 setTimeout(() => {
                     element.parentElement.style.transform = "scale(1)";
                     element.parentElement.style.zIndex = "1";
                 }, 200);
-
                 resolve();
             }, duration);
         });
     };
 
-    // Sequential Loop
     for (let i = 0; i < TOTAL_SEATS; i++) {
-        if (!seats[i]) continue; // Skip if for some reason empty (shouldn't be)
-
-        // highlight current seat processing
-        seatElements[i].div.style.border = "3px solid #ffeb3b"; // Bright Yellow highlight
-
-        // Run roulette
-        await runRoulette(seatElements[i].nameDiv, seats[i].name, 400); // 400ms per seat
-
-        // Restore border color (or keep it highlighted?) -> Let's revert to black or zone color
-        // Actually style.css defines border color via class but inline overrides priority
-        // Resetting inline border to allow CSS hover to work or just keep specific border
+        if (!seats[i]) continue;
+        seatElements[i].div.style.border = "3px solid #ffeb3b";
+        await runRoulette(seatElements[i].nameDiv, seats[i].name, 400);
         seatElements[i].div.style.border = "";
 
-        // Add Title/Tooltip after reveal
         const s = seats[i];
         let tooltip = `번호: ${s.displayNum}\n`;
         if (s.reason) tooltip += `사유: ${s.reason}\n`;
@@ -375,13 +462,39 @@ function handleDownload() {
         alert("저장할 배치도가 없습니다.");
         return;
     }
-    html2canvas(document.querySelector('.classroom'), {
+
+    // Create temporary date element
+    const now = new Date();
+    const dateStr = `${now.getFullYear()} - ${String(now.getMonth() + 1).padStart(2, '0')} - ${String(now.getDate()).padStart(2, '0')}`;
+
+    const dateDiv = document.createElement('div');
+    dateDiv.innerText = dateStr;
+    dateDiv.style.position = 'absolute';
+    dateDiv.style.bottom = '10px';
+    dateDiv.style.left = '50%';
+    dateDiv.style.transform = 'translateX(-50%)';
+    dateDiv.style.fontSize = '1.2rem';
+    dateDiv.style.fontFamily = "'Do Hyeon', sans-serif";
+    dateDiv.style.color = '#666';
+    dateDiv.className = 'temp-date-stamp';
+
+    const classroom = document.querySelector('.classroom');
+    const originalPosition = classroom.style.position;
+    classroom.style.position = 'relative'; // Ensure absolute positioning works
+    classroom.appendChild(dateDiv);
+
+    html2canvas(classroom, {
         backgroundColor: "#ffffff",
-        scale: 2
+        scale: 2,
+        useCORS: true
     }).then(canvas => {
         const link = document.createElement('a');
-        link.download = '자리배치도.png';
+        link.download = `자리배치도_${dateStr.replace(/ /g, '')}.png`;
         link.href = canvas.toDataURL();
         link.click();
+
+        // Clean up
+        dateDiv.remove();
+        classroom.style.position = originalPosition;
     });
 }

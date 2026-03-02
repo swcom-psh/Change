@@ -106,12 +106,18 @@ input[type="file"] {
 button {
     flex: 1;
     font-family: 'Black Han Sans', sans-serif;
-    font-size: 1.2rem;
-    padding: 15px;
+    font-size: 1.1rem;
+    /* Slightly smaller to fit better */
+    padding: 12px 10px;
     border: var(--border-width) solid var(--border-color);
     box-shadow: 3px 3px 0 var(--shadow-color);
     cursor: pointer;
     transition: all 0.1s;
+    white-space: nowrap;
+    /* Prevent awkward wrapping */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 button:active {
@@ -127,6 +133,17 @@ button:active {
 .btn-secondary {
     background-color: var(--card-bg);
     color: var(--text-color);
+}
+
+.btn-info {
+    background-color: #00BCD4;
+    color: white;
+}
+
+.btn-active {
+    background-color: #FF9800;
+    color: white;
+    box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.2);
 }
 
 /* Classroom */
@@ -159,10 +176,10 @@ button:active {
 .seating-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-    gap: 20px;
+    grid-template-rows: repeat(7, 1fr);
+    gap: 15px;
     width: 100%;
-    max-width: 800px;
+    max-width: 900px;
 }
 
 .empty-state {
@@ -210,6 +227,32 @@ button:active {
     font-size: 1.3rem;
     text-align: center;
     word-break: keep-all;
+}
+
+/* Edit Mode Styles */
+.seat-edit-cell {
+    aspect-ratio: 4/3;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.seat-edit-cell:hover {
+    background-color: rgba(0, 188, 212, 0.1);
+    border-color: #00BCD4;
+}
+
+.seat-edit-cell.active {
+    background-color: white;
+    border: 2px solid var(--border-color);
+    box-shadow: 3px 3px 0 var(--shadow-color);
+}
+
+.edit-hint {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 10px;
 }
 
 /* Row Indicators (Optional visual cue) */
