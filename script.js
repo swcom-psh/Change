@@ -6,7 +6,7 @@ const editBtn = document.getElementById('editBtn'); // New: Edit Layout button
 const seatingGrid = document.getElementById('seatingGrid');
 
 // Configuration
-const GRID_ROWS = 7;
+const GRID_ROWS = 6;
 const GRID_COLS = 6;
 let TOTAL_SEATS = 26;
 
@@ -243,14 +243,20 @@ function optimizeSeating(studentList) {
     });
 
     // Indexes for regions (based on row relative to max row)
+    // Sort activeSeats so that rows near the teacher (bottom) are assigned first
+    activeSeats.sort((a, b) => {
+        if (b.r !== a.r) return b.r - a.r; // Row descending
+        return a.c - b.c; // Column ascending
+    });
+
     const maxRow = activeSeats.length > 0 ? Math.max(...activeSeats.map(s => s.r)) : 0;
     const frontIndices = [];
     const backIndices = [];
     const middleIndices = [];
 
     activeSeats.forEach((seat, idx) => {
-        if (seat.r <= 1) frontIndices.push(idx);
-        else if (seat.r >= maxRow - 1) backIndices.push(idx);
+        if (seat.r >= maxRow - 1) frontIndices.push(idx);
+        else if (seat.r <= 1) backIndices.push(idx);
         else middleIndices.push(idx);
     });
 
@@ -322,10 +328,10 @@ function canBeAt(student, index) {
     const maxRow = activeSeats.length > 0 ? Math.max(...activeSeats.map(s => s.r)) : 0;
 
     if (student.fixed.includes('앞')) {
-        return seat.r <= 1;
+        return seat.r >= maxRow - 1;
     }
     if (student.fixed.includes('뒤')) {
-        return seat.r >= maxRow - 1;
+        return seat.r <= 1;
     }
     return true;
 }
@@ -380,8 +386,11 @@ async function renderSeating(seats) {
     seatingGrid.innerHTML = '';
     const seatElements = [];
 
-    // Sort activeSeats for consistent display if modified
-    activeSeats.sort((a, b) => a.idx - b.idx);
+    // Sort activeSeats: Bottom rows first (near teacher)
+    activeSeats.sort((a, b) => {
+        if (b.r !== a.r) return b.r - a.r;
+        return a.c - b.c;
+    });
     const maxRow = activeSeats.length > 0 ? Math.max(...activeSeats.map(s => s.r)) : 0;
 
     for (let i = 0; i < TOTAL_SEATS; i++) {
@@ -404,8 +413,8 @@ async function renderSeating(seats) {
         seatDiv.appendChild(numberDiv);
         seatDiv.appendChild(nameDiv);
 
-        if (seat.r <= 1) seatDiv.style.backgroundColor = "#e8f5e9";
-        if (seat.r >= maxRow - 1) seatDiv.style.backgroundColor = "#ffebee";
+        if (seat.r >= maxRow - 1) seatDiv.style.backgroundColor = "#e8f5e9"; // Front (Near teacher)
+        if (seat.r <= 1) seatDiv.style.backgroundColor = "#ffebee"; // Back (Far from teacher)
 
         seatingGrid.appendChild(seatDiv);
         seatElements.push({ div: seatDiv, nameDiv: nameDiv });

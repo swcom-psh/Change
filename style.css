@@ -176,7 +176,7 @@ button:active {
 .seating-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 1fr);
     gap: 15px;
     width: 100%;
     max-width: 900px;
@@ -256,18 +256,20 @@ button:active {
 }
 
 /* Row Indicators (Optional visual cue) */
+/* These will be updated dynamically by JS, but keeping classes for reference */
 .seat[data-row="0"],
 .seat[data-row="1"] {
-    /* Front */
-    border-color: #006064;
-    background-color: #E0F7FA;
-}
-
-.seat[data-row="4"],
-.seat[data-row="5"] {
-    /* Back */
+    /* Back (Far from teacher) */
     border-color: #BF360C;
     background-color: #FBE9E7;
+}
+
+/* Assuming standard layout has rows up to 5-6 */
+.seat[data-row="5"],
+.seat[data-row="6"] {
+    /* Front (Near teacher) */
+    border-color: #006064;
+    background-color: #E0F7FA;
 }
 
 @media (max-width: 768px) {
