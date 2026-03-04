@@ -2,8 +2,12 @@
 const csvInput = document.getElementById('csvInput');
 const generateBtn = document.getElementById('generateBtn');
 const downloadBtn = document.getElementById('downloadBtn');
-const editBtn = document.getElementById('editBtn'); // New: Edit Layout button
+const editBtn = document.getElementById('editBtn');
 const seatingGrid = document.getElementById('seatingGrid');
+const classroomSection = document.querySelector('.classroom');
+const classroomObjectsDiv = document.getElementById('classroomObjects');
+const reportCardSection = document.getElementById('reportCard');
+const reportContent = document.getElementById('reportContent');
 
 // Configuration
 const GRID_ROWS = 6;
@@ -144,6 +148,38 @@ function parseCSV(text) {
             fixed: cols[4] || "",
             reason: cols[5] || ""
         };
+    });
+}
+
+function getStudentAvatar(id) {
+    const emojis = ['🐨', '🐱', '🐶', '🦊', '🐰', '🐼', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐣', '🦖', '🐝', '🦋'];
+    const colors = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3', '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC'];
+
+    // Use student ID (displayNum) to pick consistent emoji and color
+    const num = parseInt(id) || 0;
+    const emoji = emojis[num % emojis.length];
+    const color = colors[num % colors.length];
+
+    return { emoji, color };
+}
+
+function renderClassroomObjects() {
+    classroomObjectsDiv.innerHTML = '';
+    const objects = [
+        { char: '🪟', top: '10%', left: '-5%' },   // Window
+        { char: '🪟', top: '40%', left: '-5%' },   // Window
+        { char: '🚪', top: '80%', left: '102%' },  // Door
+        { char: '📦', top: '10%', left: '102%' },  // Locker
+        { char: '🪴', top: '85%', left: '-5%' },   // Plant
+        { char: '🎐', top: '5%', left: '50%' }     // Air Purifier / Ornament
+    ];
+
+    objects.forEach(obj => {
+        const div = document.createElement('div');
+        div.innerText = obj.char;
+        div.style.top = obj.top;
+        div.style.left = obj.left;
+        classroomObjectsDiv.appendChild(div);
     });
 }
 
@@ -404,21 +440,29 @@ async function renderSeating(seats) {
 
         const numberDiv = document.createElement('div');
         numberDiv.className = 'seat-number';
-        numberDiv.innerText = i + 1;
+        numberDiv.innerText = ""; // Initial empty, will be set after assignment
 
         const nameDiv = document.createElement('div');
         nameDiv.className = 'student-name';
         nameDiv.innerText = "";
 
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'student-avatar';
+        avatarDiv.style.opacity = '0'; // Hide initially
+
         seatDiv.appendChild(numberDiv);
+        seatDiv.appendChild(avatarDiv);
         seatDiv.appendChild(nameDiv);
 
         if (seat.r >= maxRow - 1) seatDiv.style.backgroundColor = "#e8f5e9"; // Front (Near teacher)
         if (seat.r <= 1) seatDiv.style.backgroundColor = "#ffebee"; // Back (Far from teacher)
 
         seatingGrid.appendChild(seatDiv);
-        seatElements.push({ div: seatDiv, nameDiv: nameDiv });
+        seatElements.push({ div: seatDiv, nameDiv: nameDiv, avatarDiv: avatarDiv });
     }
+
+    renderClassroomObjects();
+    reportCardSection.style.display = 'none';
 
     // 2. Animate Sequential Reveal
     generateBtn.disabled = true;
@@ -450,11 +494,22 @@ async function renderSeating(seats) {
 
     for (let i = 0; i < TOTAL_SEATS; i++) {
         if (!seats[i]) continue;
-        seatElements[i].div.style.border = "3px solid #ffeb3b";
+
+        classroomSection.classList.add('is-announcing');
+        seatElements[i].div.classList.add('spotlight');
+
         await runRoulette(seatElements[i].nameDiv, seats[i].name, 400);
-        seatElements[i].div.style.border = "";
 
         const s = seats[i];
+        const avatar = getStudentAvatar(s.displayNum);
+        seatElements[i].avatarDiv.innerText = avatar.emoji;
+        seatElements[i].avatarDiv.style.backgroundColor = avatar.color;
+        seatElements[i].avatarDiv.style.opacity = '1';
+
+        seatElements[i].div.classList.remove('spotlight');
+
+        seatElements[i].div.querySelector('.seat-number').innerText = s.displayNum; // Set student number
+
         let tooltip = `번호: ${s.displayNum}\n`;
         if (s.reason) tooltip += `사유: ${s.reason}\n`;
         if (s.likes.length) tooltip += `선호: ${s.likes.join(', ')}\n`;
@@ -462,8 +517,57 @@ async function renderSeating(seats) {
         seatElements[i].div.title = tooltip;
     }
 
+    classroomSection.classList.remove('is-announcing');
     generateBtn.disabled = false;
     generateBtn.textContent = "자리 배치하기";
+
+    // 3. Celebration & Report
+    confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 }
+    });
+
+    generateReport(seats);
+}
+
+function generateReport(seats) {
+    reportCardSection.style.display = 'block';
+    reportContent.innerHTML = '';
+
+    const validStudents = seats.filter(Boolean);
+    const frontRow = seats.filter((s, i) => activeSeats[i].r >= Math.max(...activeSeats.map(as => as.r)) - 1 && s);
+
+    // Find "Lucky Pairs" (Neighbors who sit together and either like each other or just adjacent)
+    const pairs = [];
+    const nameToIdx = {};
+    seats.forEach((s, i) => { if (s) nameToIdx[s.name] = i; });
+
+    seats.forEach((s, i) => {
+        if (!s) return;
+        s.likes.forEach(like => {
+            const friendIdx = nameToIdx[like];
+            if (friendIdx !== undefined && isNeighbor(activeSeats[i], activeSeats[friendIdx]) && i < friendIdx) {
+                pairs.push(`${s.name} ❤ ${like}`);
+            }
+        });
+    });
+
+    const reportItems = [
+        { title: "🏫 앞자리 수호신", content: frontRow.map(s => s.name).slice(0, 5).join(', ') + (frontRow.length > 5 ? ' 등' : '') },
+        { title: "✨ 행운의 짝꿍", content: pairs.length > 0 ? pairs.slice(0, 3).join('<br>') : "새로운 친구와 친해질 시간!" },
+        { title: "🔥 배치 집중도", content: `${Math.floor(calculateScore(seats) / 100 * 100)}% 만족도` }
+    ];
+
+    reportItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'report-item';
+        div.innerHTML = `<h3>${item.title}</h3><p>${item.content}</p>`;
+        reportContent.appendChild(div);
+    });
+
+    // Smooth scroll to report
+    reportCardSection.scrollIntoView({ behavior: 'smooth' });
 }
 
 function handleDownload() {

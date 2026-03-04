@@ -40,10 +40,17 @@
                 <div class="empty-state">파일을 업로드하거나<br>바로 '자리 배치하기'를 눌러주세요!</div>
             </div>
             <div class="teacher-desk">교탁</div>
+            <div id="classroomObjects" class="classroom-objects"></div>
             <p class="edit-hint">※ '자리 구조 수정' 버튼을 누르면 자리를 직접 추가하거나 삭제할 수 있습니다.</p>
+        </section>
+
+        <section id="reportCard" class="report-card" style="display: none;">
+            <h2>📊 자리 배치 결과 리포트</h2>
+            <div id="reportContent" class="report-grid"></div>
         </section>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="script.js"></script>
