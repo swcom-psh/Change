@@ -151,36 +151,20 @@ function parseCSV(text) {
     });
 }
 
-function getStudentAvatar(id) {
-    const emojis = ['🐨', '🐱', '🐶', '🦊', '🐰', '🐼', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐣', '🦖', '🐝', '🦋'];
+function getStudentAvatar(id, name) {
     const colors = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3', '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC'];
 
-    // Use student ID (displayNum) to pick consistent emoji and color
+    // Use student ID (displayNum) to pick consistent color
     const num = parseInt(id) || 0;
-    const emoji = emojis[num % emojis.length];
     const color = colors[num % colors.length];
+    const initial = name ? name.charAt(0) : '?';
 
-    return { emoji, color };
+    return { initial, color };
 }
 
 function renderClassroomObjects() {
     classroomObjectsDiv.innerHTML = '';
-    const objects = [
-        { char: '🪟', top: '10%', left: '-5%' },   // Window
-        { char: '🪟', top: '40%', left: '-5%' },   // Window
-        { char: '🚪', top: '80%', left: '102%' },  // Door
-        { char: '📦', top: '10%', left: '102%' },  // Locker
-        { char: '🪴', top: '85%', left: '-5%' },   // Plant
-        { char: '🎐', top: '5%', left: '50%' }     // Air Purifier / Ornament
-    ];
-
-    objects.forEach(obj => {
-        const div = document.createElement('div');
-        div.innerText = obj.char;
-        div.style.top = obj.top;
-        div.style.left = obj.left;
-        classroomObjectsDiv.appendChild(div);
-    });
+    // User requested to remove icons like windows and boxes.
 }
 
 function parseXLSX(file) {
@@ -501,14 +485,14 @@ async function renderSeating(seats) {
         await runRoulette(seatElements[i].nameDiv, seats[i].name, 400);
 
         const s = seats[i];
-        const avatar = getStudentAvatar(s.displayNum);
-        seatElements[i].avatarDiv.innerText = avatar.emoji;
+        const avatar = getStudentAvatar(s.displayNum, s.name);
+        seatElements[i].avatarDiv.innerText = s.displayNum; // Display number in center circle
         seatElements[i].avatarDiv.style.backgroundColor = avatar.color;
         seatElements[i].avatarDiv.style.opacity = '1';
 
         seatElements[i].div.classList.remove('spotlight');
 
-        seatElements[i].div.querySelector('.seat-number').innerText = s.displayNum; // Set student number
+        // seatElements[i].div.querySelector('.seat-number').innerText = s.displayNum; // Removed top-left number
 
         let tooltip = `번호: ${s.displayNum}\n`;
         if (s.reason) tooltip += `사유: ${s.reason}\n`;
@@ -548,15 +532,15 @@ function generateReport(seats) {
         s.likes.forEach(like => {
             const friendIdx = nameToIdx[like];
             if (friendIdx !== undefined && isNeighbor(activeSeats[i], activeSeats[friendIdx]) && i < friendIdx) {
-                pairs.push(`${s.name} ❤ ${like}`);
+                pairs.push(`${s.name} & ${like}`);
             }
         });
     });
 
     const reportItems = [
-        { title: "🏫 앞자리 수호신", content: frontRow.map(s => s.name).slice(0, 5).join(', ') + (frontRow.length > 5 ? ' 등' : '') },
-        { title: "✨ 행운의 짝꿍", content: pairs.length > 0 ? pairs.slice(0, 3).join('<br>') : "새로운 친구와 친해질 시간!" },
-        { title: "🔥 배치 집중도", content: `${Math.floor(calculateScore(seats) / 100 * 100)}% 만족도` }
+        { title: "앞자리 수호신", content: frontRow.map(s => s.name).slice(0, 5).join(', ') + (frontRow.length > 5 ? ' 등' : '') },
+        { title: "행운의 짝꿍", content: pairs.length > 0 ? pairs.slice(0, 3).join('<br>') : "새로운 친구와 친해질 시간!" },
+        { title: "배치 만족도", content: `${Math.floor(calculateScore(seats) / 100 * 100)}%` }
     ];
 
     reportItems.forEach(item => {
