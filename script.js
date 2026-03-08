@@ -202,14 +202,24 @@ function parseXLSX(file) {
     });
 }
 
-// Check adjacency between two seat objects
-function isNeighbor(s1, s2) {
-    if (!s1 || !s2) return false;
+// Check adjacency and return weight (1.0: Horizontal, 0.5: Vertical, 0.3: Diagonal, 0: None)
+function getNeighborWeight(s1, s2) {
+    if (!s1 || !s2) return 0;
     const rDiff = Math.abs(s1.r - s2.r);
     const cDiff = Math.abs(s1.c - s2.c);
 
-    // Adjacent (Horizontal, Vertical, Diagonal)
-    return rDiff <= 1 && cDiff <= 1 && !(rDiff === 0 && cDiff === 0);
+    if (rDiff === 0 && cDiff === 1) {
+        // Horizontal (Side-by-side)
+        // Only (0,1), (2,3), (4,5) are real partners in a 6-col grid (1-2, 3-4, 5-6)
+        const minC = Math.min(s1.c, s2.c);
+        if (minC === 0 || minC === 2 || minC === 4) {
+            return 1.0;
+        }
+        return 0; // Separated by aisle (1-2 or 3-4 column gap)
+    }
+    if (rDiff === 1 && cDiff === 0) return 0.5; // Vertical (Front-back)
+    if (rDiff === 1 && cDiff === 1) return 0.3; // Diagonal
+    return 0;
 }
 
 function calculateScore(seats) {
@@ -228,8 +238,9 @@ function calculateScore(seats) {
         student.likes.forEach(friendName => {
             if (nameToIdx[friendName] !== undefined) {
                 const friendIdx = nameToIdx[friendName];
-                if (isNeighbor(activeSeats[idx], activeSeats[friendIdx])) {
-                    score += SCORE_LIKE;
+                const weight = getNeighborWeight(activeSeats[idx], activeSeats[friendIdx]);
+                if (weight > 0) {
+                    score += SCORE_LIKE * weight;
                 }
             }
         });
@@ -238,7 +249,9 @@ function calculateScore(seats) {
         student.dislikes.forEach(enemyName => {
             if (nameToIdx[enemyName] !== undefined) {
                 const enemyIdx = nameToIdx[enemyName];
-                if (isNeighbor(activeSeats[idx], activeSeats[enemyIdx])) {
+                const weight = getNeighborWeight(activeSeats[idx], activeSeats[enemyIdx]);
+                if (weight > 0) {
+                    // Dislikes always get full penalty regardless of direction for safety
                     score += SCORE_DISLIKE;
                 }
             }
@@ -331,7 +344,8 @@ function optimizeSeating(studentList) {
 
         const newScore = calculateScore(seats);
 
-        if (newScore > currentScore) {
+        // >= currentScore allows swapping even for the same score, increasing randomness
+        if (newScore > currentScore || (newScore === currentScore && Math.random() < 0.2)) {
             currentScore = newScore;
         } else {
             seats[idx1] = s1;
@@ -531,7 +545,7 @@ function generateReport(seats) {
         if (!s) return;
         s.likes.forEach(like => {
             const friendIdx = nameToIdx[like];
-            if (friendIdx !== undefined && isNeighbor(activeSeats[i], activeSeats[friendIdx]) && i < friendIdx) {
+            if (friendIdx !== undefined && getNeighborWeight(activeSeats[i], activeSeats[friendIdx]) > 0 && i < friendIdx) {
                 pairs.push(`${s.name} & ${like}`);
             }
         });
