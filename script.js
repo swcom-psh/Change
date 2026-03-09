@@ -138,13 +138,20 @@ function parseCSV(text) {
     lines.shift();
 
     return lines.map((line, index) => {
-        const cols = line.split(',').map(c => c.trim());
+        const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => {
+            let val = c.trim();
+            if (val.startsWith('"') && val.endsWith('"')) {
+                val = val.substring(1, val.length - 1).trim();
+            }
+            return val.normalize('NFC');
+        });
+
         return {
             id: index,
             displayNum: cols[0],
             name: cols[1],
-            likes: cols[2] ? cols[2].split(/[| ]+/).filter(Boolean) : [],
-            dislikes: cols[3] ? cols[3].split(/[| ]+/).filter(Boolean) : [],
+            likes: cols[2] ? cols[2].split(/[|\s,]+/).filter(Boolean) : [],
+            dislikes: cols[3] ? cols[3].split(/[|\s,]+/).filter(Boolean) : [],
             fixed: cols[4] || "",
             reason: cols[5] || ""
         };
@@ -185,11 +192,11 @@ function parseXLSX(file) {
                     return {
                         id: index,
                         displayNum: cols[0] || (index + 1),
-                        name: String(cols[1] || "").trim(),
-                        likes: cols[2] ? String(cols[2]).split(/[| ]+/).filter(Boolean) : [],
-                        dislikes: cols[3] ? String(cols[3]).split(/[| ]+/).filter(Boolean) : [],
-                        fixed: cols[4] || "",
-                        reason: cols[5] || ""
+                        name: String(cols[1] || "").trim().normalize('NFC'),
+                        likes: cols[2] ? String(cols[2]).normalize('NFC').split(/[|\s,]+/).filter(Boolean) : [],
+                        dislikes: cols[3] ? String(cols[3]).normalize('NFC').split(/[|\s,]+/).filter(Boolean) : [],
+                        fixed: String(cols[4] || "").normalize('NFC'),
+                        reason: String(cols[5] || "").normalize('NFC')
                     };
                 });
                 resolve(parsed);
@@ -249,9 +256,15 @@ function calculateScore(seats) {
         student.dislikes.forEach(enemyName => {
             if (nameToIdx[enemyName] !== undefined) {
                 const enemyIdx = nameToIdx[enemyName];
-                const weight = getNeighborWeight(activeSeats[idx], activeSeats[enemyIdx]);
-                if (weight > 0) {
-                    // Dislikes always get full penalty regardless of direction for safety
+                const s1 = activeSeats[idx];
+                const s2 = activeSeats[enemyIdx];
+                if (!s1 || !s2) return;
+
+                const rDiff = Math.abs(s1.r - s2.r);
+                const cDiff = Math.abs(s1.c - s2.c);
+
+                // If they are within 1 row and 1 col of each other (including diagonal and across aisle)
+                if (rDiff <= 1 && cDiff <= 1) {
                     score += SCORE_DISLIKE;
                 }
             }
@@ -271,7 +284,7 @@ function optimizeSeating(studentList) {
 
     studentList.forEach(s => {
         if (s.fixed.includes('앞')) frontGroup.push(s);
-        else if (s.fixed.includes('뒤')) backGroup.push(s);
+        else if (s.fixed.includes('뒤') || s.fixed.includes('뒷')) backGroup.push(s);
         else normalGroup.push(s);
     });
 
@@ -364,7 +377,7 @@ function canBeAt(student, index) {
     if (student.fixed.includes('앞')) {
         return seat.r >= maxRow - 1;
     }
-    if (student.fixed.includes('뒤')) {
+    if (student.fixed.includes('뒤') || student.fixed.includes('뒷')) {
         return seat.r <= 1;
     }
     return true;
@@ -551,10 +564,20 @@ function generateReport(seats) {
         });
     });
 
+    let maxLikes = 0;
+    seats.forEach(s => {
+        if (s) maxLikes += s.likes.length;
+    });
+    const maxScore = maxLikes * SCORE_LIKE || 1;
+    let currentScore = calculateScore(seats);
+    let satisfaction = Math.max(0, Math.floor((currentScore / maxScore) * 100));
+    // Cap at 100% just in case
+    if (satisfaction > 100) satisfaction = 100;
+
     const reportItems = [
         { title: "앞자리 수호신", content: frontRow.map(s => s.name).slice(0, 5).join(', ') + (frontRow.length > 5 ? ' 등' : '') },
         { title: "행운의 짝꿍", content: pairs.length > 0 ? pairs.slice(0, 3).join('<br>') : "새로운 친구와 친해질 시간!" },
-        { title: "배치 만족도", content: `${Math.floor(calculateScore(seats) / 100 * 100)}%` }
+        { title: "배치 만족도", content: `${satisfaction}% (점수: ${currentScore})` }
     ];
 
     reportItems.forEach(item => {
