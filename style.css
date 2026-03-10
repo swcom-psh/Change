@@ -215,6 +215,26 @@ button:active {
     background-color: #fff9c4;
 }
 
+.seat[draggable="true"] {
+    cursor: grab;
+}
+
+.seat[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.seat.dragging {
+    opacity: 0.5;
+    border: 2px dashed #000;
+}
+
+.seat.drag-over {
+    background-color: var(--highlight-color) !important;
+    transform: scale(1.05);
+    border: 3px solid #000;
+    z-index: 5;
+}
+
 .seat-number {
     position: absolute;
     top: 5px;

@@ -51,7 +51,9 @@ const DEFAULT_STUDENT_CSV = `번호,이름,같이앉고싶은친구,기피하는
 // State
 let students = [];
 let activeSeats = []; // Array of {idx, row, col}
+let currentAssignment = []; // Array of students currently in activeSeats
 let isEditMode = false;
+let draggedSeatIndex = null;
 
 // Initialize Default Layout (2-6-6-6-6)
 function initDefaultLayout() {
@@ -118,6 +120,7 @@ async function handleGenerate() {
         // Allow UI to update before blocking
         setTimeout(() => {
             const assignment = optimizeSeating(students);
+            currentAssignment = [...assignment];
             renderSeating(assignment);
 
             generateBtn.textContent = "자리 배치하기";
@@ -444,6 +447,14 @@ async function renderSeating(seats) {
         const seat = activeSeats[i];
         const seatDiv = document.createElement('div');
         seatDiv.className = 'seat';
+        seatDiv.setAttribute('data-index', i);
+
+        // Drag and Drop Attributes & Listeners
+        seatDiv.addEventListener('dragstart', handleDragStart);
+        seatDiv.addEventListener('dragover', handleDragOver);
+        seatDiv.addEventListener('dragleave', handleDragLeave);
+        seatDiv.addEventListener('drop', handleDrop);
+        seatDiv.addEventListener('dragend', handleDragEnd);
 
         seatDiv.style.gridRow = seat.r + 1;
         seatDiv.style.gridColumn = seat.c + 1;
@@ -532,6 +543,9 @@ async function renderSeating(seats) {
     generateBtn.disabled = false;
     generateBtn.textContent = "자리 배치하기";
 
+    // Enable dragging after animation
+    seatingGrid.querySelectorAll('.seat').forEach(s => s.draggable = true);
+
     // 3. Celebration & Report
     confetti({
         particleCount: 150,
@@ -588,7 +602,7 @@ function generateReport(seats) {
     });
 
     // Smooth scroll to report
-    reportCardSection.scrollIntoView({ behavior: 'smooth' });
+
 }
 
 function handleDownload() {
@@ -631,4 +645,84 @@ function handleDownload() {
         dateDiv.remove();
         classroom.style.position = originalPosition;
     });
+}
+
+// Drag & Drop Handlers
+function handleDragStart(e) {
+    if (isEditMode || classroomSection.classList.contains('is-announcing')) {
+        e.preventDefault();
+        return;
+    }
+    draggedSeatIndex = parseInt(this.getAttribute('data-index'));
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) e.preventDefault();
+    this.classList.add('drag-over');
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragLeave() {
+    this.classList.remove('drag-over');
+}
+
+function handleDragEnd() {
+    this.classList.remove('dragging');
+    seatingGrid.querySelectorAll('.seat').forEach(s => s.classList.remove('drag-over'));
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) e.stopPropagation();
+    this.classList.remove('drag-over');
+
+    const targetIndex = parseInt(this.getAttribute('data-index'));
+    if (draggedSeatIndex === null || draggedSeatIndex === targetIndex) return;
+
+    // Swap students in currentAssignment
+    const temp = currentAssignment[draggedSeatIndex];
+    currentAssignment[draggedSeatIndex] = currentAssignment[targetIndex];
+    currentAssignment[targetIndex] = temp;
+
+    // Update DOM for both seats
+    updateSeatDOM(draggedSeatIndex);
+    updateSeatDOM(targetIndex);
+
+    // Update Report for satisfaction change
+    generateReport(currentAssignment);
+
+    return false;
+}
+
+function updateSeatDOM(index) {
+    const student = currentAssignment[index];
+    const seatDiv = seatingGrid.querySelector(`.seat[data-index="${index}"]`);
+    if (!seatDiv) return;
+
+    const nameDiv = seatDiv.querySelector('.student-name');
+    const avatarDiv = seatDiv.querySelector('.student-avatar');
+
+    if (student) {
+        nameDiv.innerText = student.name;
+        nameDiv.style.color = "#000";
+        nameDiv.style.fontWeight = "bold";
+
+        const avatar = getStudentAvatar(student.displayNum, student.name);
+        avatarDiv.innerText = student.displayNum;
+        avatarDiv.style.backgroundColor = avatar.color;
+        avatarDiv.style.opacity = '1';
+
+        let tooltip = `번호: ${student.displayNum}\n`;
+        if (student.reason) tooltip += `사유: ${student.reason}\n`;
+        if (student.likes.length) tooltip += `선호: ${student.likes.join(', ')}\n`;
+        if (student.dislikes.length) tooltip += `기피: ${student.dislikes.join(', ')}`;
+        seatDiv.title = tooltip;
+    } else {
+        nameDiv.innerText = "";
+        avatarDiv.innerText = "";
+        avatarDiv.style.opacity = '0';
+        seatDiv.title = "";
+    }
 }
