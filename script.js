@@ -6,8 +6,7 @@ const editBtn = document.getElementById('editBtn');
 const seatingGrid = document.getElementById('seatingGrid');
 const classroomSection = document.querySelector('.classroom');
 const classroomObjectsDiv = document.getElementById('classroomObjects');
-const reportCardSection = document.getElementById('reportCard');
-const reportContent = document.getElementById('reportContent');
+const unassignedList = document.getElementById('unassignedList');
 
 // Configuration
 const GRID_ROWS = 6;
@@ -20,33 +19,7 @@ const SCORE_DISLIKE = -100;
 const ITERATIONS = 20000; // Optimization attempts
 
 // Default Data Fallback (for local file:// protocol compatibility)
-const DEFAULT_STUDENT_CSV = `번호,이름,같이앉고싶은친구,기피하는친구,희망고정자리,이유
-1,권지훈
-2,김다율
-3,김서윤
-4,김선민
-5,김아린
-6,김은비
-7,김태민
-8,김하빈
-9,박기령
-10,박소현
-11,박자희
-12,박재우
-13,서민주
-14,안성은
-15,이서후
-16,이온유
-17,이재인
-18,이채원
-19,이효린
-20,장주영
-21,전수빈
-22,전승민
-23,조문준
-24,차윤우
-25,한소희
-26,홍예은`;
+// Removed default data per user request
 
 // State
 let students = [];
@@ -54,6 +27,7 @@ let activeSeats = []; // Array of {idx, row, col}
 let currentAssignment = []; // Array of students currently in activeSeats
 let isEditMode = false;
 let draggedSeatIndex = null;
+let draggedSidebarId = null;
 
 // Initialize Default Layout (2-6-6-6-6)
 function initDefaultLayout() {
@@ -72,11 +46,36 @@ function initDefaultLayout() {
 initDefaultLayout();
 
 // Event Listeners
+csvInput.addEventListener('change', handleFileLoad);
 generateBtn.addEventListener('click', handleGenerate);
 downloadBtn.addEventListener('click', handleDownload);
 editBtn.addEventListener('click', toggleEditMode);
 
-async function handleGenerate() {
+if (unassignedList) {
+    unassignedList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        unassignedList.classList.add('drag-over');
+    });
+
+    unassignedList.addEventListener('dragleave', () => {
+        unassignedList.classList.remove('drag-over');
+    });
+
+    unassignedList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        unassignedList.classList.remove('drag-over');
+        
+        if (draggedSeatIndex !== null) {
+            // Move from seat to sidebar
+            currentAssignment[draggedSeatIndex] = null;
+            updateSeatDOM(draggedSeatIndex);
+            renderUnassignedList();
+            draggedSeatIndex = null;
+        }
+    });
+}
+
+async function handleFileLoad() {
     let text = "";
     const file = csvInput.files[0];
 
@@ -89,42 +88,38 @@ async function handleGenerate() {
                 text = await file.text();
                 students = parseCSV(text);
             }
-        } else {
-            // 파일을 선택하지 않은 경우 기본 파일 사용 시도
-            try {
-                const response = await fetch('student_sample_data.csv');
-                if (response.ok) {
-                    text = await response.text();
-                } else {
-                    text = DEFAULT_STUDENT_CSV;
-                }
-            } catch (e) {
-                // Fetch failed (likely file:// protocol restriction), use fallback
-                console.warn("Fetch failed, using local fallback data.");
-                text = DEFAULT_STUDENT_CSV;
-            }
-            students = parseCSV(text);
+            
+            currentAssignment = new Array(TOTAL_SEATS).fill(null);
+            renderUnassignedList();
+            renderSeating(currentAssignment, true);
         }
+    } catch (err) {
+        console.error(err);
+        alert("파일 읽기 오류: " + err.message);
+    }
+}
 
+async function handleGenerate() {
+    try {
         if (students.length === 0) {
-            alert("데이터가 없습니다.");
+            alert("학생 명단 파일(CSV 또는 엑셀)을 먼저 업로드해 주세요.\n양식이 없다면 정보T에게 문의하세요.");
             return;
         }
 
-        // Show loading state (simple)
         generateBtn.textContent = "계산 중...";
         generateBtn.disabled = true;
 
-        if (isEditMode) toggleEditMode(); // Exit edit mode when generating
+        if (isEditMode) toggleEditMode();
 
-        // Allow UI to update before blocking
         setTimeout(() => {
-            const assignment = optimizeSeating(students);
+            const assignment = optimizeSeating(students, currentAssignment);
+            const prevAssignment = [...currentAssignment];
             currentAssignment = [...assignment];
-            renderSeating(assignment);
+            renderSeating(currentAssignment, false, prevAssignment);
 
             generateBtn.textContent = "자리 배치하기";
             generateBtn.disabled = false;
+            renderUnassignedList();
         }, 50);
 
     } catch (err) {
@@ -277,15 +272,18 @@ function calculateScore(seats) {
     return score;
 }
 
-function optimizeSeating(studentList) {
-    let seats = new Array(TOTAL_SEATS).fill(null);
+function optimizeSeating(studentList, preAssigned = []) {
+    let seats = preAssigned.length > 0 ? [...preAssigned] : new Array(TOTAL_SEATS).fill(null);
 
     // 1. Separate based on Fixed Constraints
     const frontGroup = [];
     const backGroup = [];
     const normalGroup = [];
 
-    studentList.forEach(s => {
+    const assignedIds = new Set(seats.filter(Boolean).map(s => s.id));
+    const unassignedStudents = studentList.filter(s => !assignedIds.has(s.id));
+
+    unassignedStudents.forEach(s => {
         if (s.fixed.includes('앞')) frontGroup.push(s);
         else if (s.fixed.includes('뒤') || s.fixed.includes('뒷')) backGroup.push(s);
         else normalGroup.push(s);
@@ -347,6 +345,9 @@ function optimizeSeating(studentList) {
         const idx2 = Math.floor(Math.random() * TOTAL_SEATS);
 
         if (idx1 === idx2) continue;
+
+        // Skip if either seat was locked/pre-assigned by user
+        if (preAssigned[idx1] || preAssigned[idx2]) continue;
 
         const s1 = seats[idx1];
         const s2 = seats[idx2];
@@ -428,8 +429,59 @@ function renderEditGrid() {
     }
 }
 
+function renderUnassignedList() {
+    if (!unassignedList) return;
+    unassignedList.innerHTML = '';
+    
+    const assignedIds = new Set(currentAssignment.filter(Boolean).map(s => s.id));
+    const unassigned = students.filter(s => !assignedIds.has(s.id));
+    
+    if (unassigned.length === 0 && students.length > 0) {
+        unassignedList.innerHTML = '<div class="empty-list-msg">모든 학생이<br>배치되었습니다.</div>';
+        return;
+    } else if (students.length === 0) {
+        unassignedList.innerHTML = '<div class="empty-list-msg">파일을 업로드하면<br>명단이 표시됩니다.</div>';
+        return;
+    }
+
+    unassigned.forEach(student => {
+        const div = document.createElement('div');
+        div.className = 'unassigned-student';
+        div.draggable = true;
+        div.setAttribute('data-id', student.id);
+        
+        const avatar = getStudentAvatar(student.displayNum, student.name);
+        
+        div.innerHTML = `
+            <div class="unassigned-avatar" style="background-color: ${avatar.color}">${student.displayNum}</div>
+            <div class="unassigned-name">${student.name}</div>
+        `;
+        
+        div.addEventListener('dragstart', handleSidebarDragStart);
+        div.addEventListener('dragend', handleSidebarDragEnd);
+        
+        unassignedList.appendChild(div);
+    });
+}
+
+function handleSidebarDragStart(e) {
+    if (isEditMode || classroomSection.classList.contains('is-announcing')) {
+        e.preventDefault();
+        return;
+    }
+    draggedSidebarId = parseInt(this.getAttribute('data-id'));
+    draggedSeatIndex = null;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleSidebarDragEnd() {
+    this.classList.remove('dragging');
+    seatingGrid.querySelectorAll('.seat').forEach(s => s.classList.remove('drag-over'));
+}
+
 // Render Function (with Animation)
-async function renderSeating(seats) {
+async function renderSeating(seats, isSilent = false, prevAssignment = []) {
     if (isEditMode) toggleEditMode();
 
     // 1. Setup Grid first
@@ -484,11 +536,12 @@ async function renderSeating(seats) {
     }
 
     renderClassroomObjects();
-    reportCardSection.style.display = 'none';
 
     // 2. Animate Sequential Reveal
-    generateBtn.disabled = true;
-    generateBtn.textContent = "발표 중...";
+    if (!isSilent) {
+        generateBtn.disabled = true;
+        generateBtn.textContent = "발표 중...";
+    }
 
     const runRoulette = (element, finalName, duration) => {
         return new Promise(resolve => {
@@ -514,95 +567,77 @@ async function renderSeating(seats) {
         });
     };
 
+    // First pass: immediately render pre-assigned students to prevent them from "disappearing" while other seats animate
     for (let i = 0; i < TOTAL_SEATS; i++) {
-        if (!seats[i]) continue;
-
-        classroomSection.classList.add('is-announcing');
-        seatElements[i].div.classList.add('spotlight');
-
-        await runRoulette(seatElements[i].nameDiv, seats[i].name, 400);
-
         const s = seats[i];
-        const avatar = getStudentAvatar(s.displayNum, s.name);
-        seatElements[i].avatarDiv.innerText = s.displayNum; // Display number in center circle
-        seatElements[i].avatarDiv.style.backgroundColor = avatar.color;
-        seatElements[i].avatarDiv.style.opacity = '1';
+        if (!s) continue;
+        
+        if (isSilent || prevAssignment[i] === s) {
+            seatElements[i].nameDiv.innerText = s.name;
+            seatElements[i].nameDiv.style.color = "#000";
+            seatElements[i].nameDiv.style.fontWeight = "bold";
 
-        seatElements[i].div.classList.remove('spotlight');
+            const avatar = getStudentAvatar(s.displayNum, s.name);
+            seatElements[i].avatarDiv.innerText = s.displayNum;
+            seatElements[i].avatarDiv.style.backgroundColor = avatar.color;
+            seatElements[i].avatarDiv.style.opacity = '1';
 
-        // seatElements[i].div.querySelector('.seat-number').innerText = s.displayNum; // Removed top-left number
-
-        let tooltip = `번호: ${s.displayNum}\n`;
-        if (s.reason) tooltip += `사유: ${s.reason}\n`;
-        if (s.likes.length) tooltip += `선호: ${s.likes.join(', ')}\n`;
-        if (s.dislikes.length) tooltip += `기피: ${s.dislikes.join(', ')}`;
-        seatElements[i].div.title = tooltip;
+            let tooltip = `번호: ${s.displayNum}\n`;
+            if (s.reason) tooltip += `사유: ${s.reason}\n`;
+            if (s.likes.length) tooltip += `선호: ${s.likes.join(', ')}\n`;
+            if (s.dislikes.length) tooltip += `기피: ${s.dislikes.join(', ')}`;
+            seatElements[i].div.title = tooltip;
+        }
     }
 
-    classroomSection.classList.remove('is-announcing');
-    generateBtn.disabled = false;
-    generateBtn.textContent = "자리 배치하기";
+    for (let i = 0; i < TOTAL_SEATS; i++) {
+        const s = seats[i];
+        if (!s) continue;
 
-    // Enable dragging after animation
-    seatingGrid.querySelectorAll('.seat').forEach(s => s.draggable = true);
+        // Skip animating if it's already pre-assigned
+        if (!isSilent && prevAssignment[i] !== s) {
+            classroomSection.classList.add('is-announcing');
+            seatElements[i].div.classList.add('spotlight');
 
-    // 3. Celebration & Report
-    confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 }
-    });
+            await runRoulette(seatElements[i].nameDiv, s.name, 400);
 
-    generateReport(seats);
-}
+            seatElements[i].div.classList.remove('spotlight');
+            
+            // Set final content
+            seatElements[i].nameDiv.innerText = s.name;
+            seatElements[i].nameDiv.style.color = "#000";
+            seatElements[i].nameDiv.style.fontWeight = "bold";
 
-function generateReport(seats) {
-    reportCardSection.style.display = 'block';
-    reportContent.innerHTML = '';
+            const avatar = getStudentAvatar(s.displayNum, s.name);
+            seatElements[i].avatarDiv.innerText = s.displayNum; 
+            seatElements[i].avatarDiv.style.backgroundColor = avatar.color;
+            seatElements[i].avatarDiv.style.opacity = '1';
 
-    const validStudents = seats.filter(Boolean);
-    const frontRow = seats.filter((s, i) => activeSeats[i].r >= Math.max(...activeSeats.map(as => as.r)) - 1 && s);
+            let tooltip = `번호: ${s.displayNum}\n`;
+            if (s.reason) tooltip += `사유: ${s.reason}\n`;
+            if (s.likes.length) tooltip += `선호: ${s.likes.join(', ')}\n`;
+            if (s.dislikes.length) tooltip += `기피: ${s.dislikes.join(', ')}`;
+            seatElements[i].div.title = tooltip;
+        }
+    }
 
-    // Find "Lucky Pairs" (Neighbors who sit together and either like each other or just adjacent)
-    const pairs = [];
-    const nameToIdx = {};
-    seats.forEach((s, i) => { if (s) nameToIdx[s.name] = i; });
+    if (!isSilent) {
+        classroomSection.classList.remove('is-announcing');
+        generateBtn.disabled = false;
+        generateBtn.textContent = "자리 배치하기";
 
-    seats.forEach((s, i) => {
-        if (!s) return;
-        s.likes.forEach(like => {
-            const friendIdx = nameToIdx[like];
-            if (friendIdx !== undefined && getNeighborWeight(activeSeats[i], activeSeats[friendIdx]) > 0 && i < friendIdx) {
-                pairs.push(`${s.name} & ${like}`);
-            }
+        // Enable dragging after animation
+        seatingGrid.querySelectorAll('.seat').forEach(s => s.draggable = true);
+
+        // 3. Celebration
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 }
         });
-    });
-
-    let maxLikes = 0;
-    seats.forEach(s => {
-        if (s) maxLikes += s.likes.length;
-    });
-    const maxScore = maxLikes * SCORE_LIKE || 1;
-    let currentScore = calculateScore(seats);
-    let satisfaction = Math.max(0, Math.floor((currentScore / maxScore) * 100));
-    // Cap at 100% just in case
-    if (satisfaction > 100) satisfaction = 100;
-
-    const reportItems = [
-        { title: "앞자리 수호신", content: frontRow.map(s => s.name).slice(0, 5).join(', ') + (frontRow.length > 5 ? ' 등' : '') },
-        { title: "행운의 짝꿍", content: pairs.length > 0 ? pairs.slice(0, 3).join('<br>') : "새로운 친구와 친해질 시간!" },
-        { title: "배치 만족도", content: `${satisfaction}% (점수: ${currentScore})` }
-    ];
-
-    reportItems.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'report-item';
-        div.innerHTML = `<h3>${item.title}</h3><p>${item.content}</p>`;
-        reportContent.appendChild(div);
-    });
-
-    // Smooth scroll to report
-
+    } else {
+        seatingGrid.querySelectorAll('.seat').forEach(s => s.draggable = true);
+    }
 }
 
 function handleDownload() {
@@ -654,6 +689,7 @@ function handleDragStart(e) {
         return;
     }
     draggedSeatIndex = parseInt(this.getAttribute('data-index'));
+    draggedSidebarId = null;
     this.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
 }
@@ -679,19 +715,23 @@ function handleDrop(e) {
     this.classList.remove('drag-over');
 
     const targetIndex = parseInt(this.getAttribute('data-index'));
-    if (draggedSeatIndex === null || draggedSeatIndex === targetIndex) return;
 
-    // Swap students in currentAssignment
-    const temp = currentAssignment[draggedSeatIndex];
-    currentAssignment[draggedSeatIndex] = currentAssignment[targetIndex];
-    currentAssignment[targetIndex] = temp;
+    if (draggedSidebarId !== null) {
+        const student = students.find(s => s.id === draggedSidebarId);
+        currentAssignment[targetIndex] = student;
+        updateSeatDOM(targetIndex);
+        renderUnassignedList();
+        draggedSidebarId = null;
+    } else if (draggedSeatIndex !== null && draggedSeatIndex !== targetIndex) {
+        // Swap students in currentAssignment
+        const temp = currentAssignment[draggedSeatIndex];
+        currentAssignment[draggedSeatIndex] = currentAssignment[targetIndex];
+        currentAssignment[targetIndex] = temp;
 
-    // Update DOM for both seats
-    updateSeatDOM(draggedSeatIndex);
-    updateSeatDOM(targetIndex);
-
-    // Update Report for satisfaction change
-    generateReport(currentAssignment);
+        // Update DOM for both seats
+        updateSeatDOM(draggedSeatIndex);
+        updateSeatDOM(targetIndex);
+    }
 
     return false;
 }

@@ -35,7 +35,7 @@ h3 {
 }
 
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -146,16 +146,123 @@ button:active {
     box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.2);
 }
 
+/* Main Layout with Sidebar */
+.main-body {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.sidebar {
+    width: 260px;
+    min-width: 260px;
+    flex-shrink: 0;
+    background: var(--card-bg);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+
+.sidebar h2 {
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+    text-align: center;
+}
+
+.sidebar-help {
+    font-size: 0.9rem;
+    color: #555;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.unassigned-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 100px;
+    border: 2px dashed #ccc;
+    padding: 10px;
+    background: #f9f9f9;
+}
+
+.unassigned-list.drag-over {
+    background-color: #e3f2fd;
+    border-color: var(--primary-color);
+}
+
+.empty-list-msg {
+    text-align: center;
+    color: #888;
+    font-size: 0.9rem;
+    margin: auto;
+}
+
+.unassigned-student {
+    background: white;
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: 2px 2px 0 var(--shadow-color);
+    padding: 10px;
+    border-radius: 4px;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.2s;
+    font-family: 'Do Hyeon', sans-serif;
+    font-size: 1.2rem;
+}
+
+.unassigned-student:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--shadow-color);
+    background-color: #fff9c4;
+    z-index: 10;
+}
+
+.unassigned-student[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.unassigned-student.dragging {
+    opacity: 0.5;
+    border: 2px dashed #000;
+}
+
+.unassigned-avatar {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-family: 'Black Han Sans', sans-serif;
+    font-weight: bold;
+    color: #000;
+}
+
 /* Classroom */
 .classroom {
     background: var(--card-bg);
     border: var(--border-width) solid var(--border-color);
     box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow-color);
-    padding: 40px;
+    padding: 20px 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 30px;
+    gap: 20px;
+    flex: 1;
+    min-width: 0;
 }
 
 .teacher-desk {
@@ -175,8 +282,8 @@ button:active {
 
 .seating-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(6, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-auto-rows: auto;
     gap: 15px;
     width: 100%;
     max-width: 900px;
@@ -386,6 +493,16 @@ button:active {
 @media (max-width: 768px) {
     .controls {
         grid-template-columns: 1fr;
+    }
+
+    .main-body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        position: static;
+        max-height: 300px;
     }
 
     .seating-grid {
