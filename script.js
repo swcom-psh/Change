@@ -7,7 +7,7 @@
    1. Configuration & Constants
    ========================================== */
 const CONFIG = {
-    GRID: { ROWS: 6, COLS: 6 },
+    GRID: { ROWS: 6, COLS: 6 }, // Will be updated dynamically if needed
     ALGORITHM: {
         ITERATIONS: 20000,
         SCORE_LIKE: 20,
@@ -48,17 +48,55 @@ const ELEMENTS = {
 /* ==========================================
    4. Initialization & Layout
    ========================================== */
-function initDefaultLayout() {
+function initDefaultLayout(studentCount = 26) {
     activeSeats = [];
-    // Row 0: 2 seats (indices 2, 3 in 6-col grid)
-    activeSeats.push({ idx: 2, r: 0, c: 2 });
-    activeSeats.push({ idx: 3, r: 0, c: 3 });
-    // Rows 1-4: 6 seats each
+    
+    // 1. Calculate required GRID size
+    // Standard layout is 6x6. If more than 36 students, add rows.
+    CONFIG.GRID.COLS = 6;
+    CONFIG.GRID.ROWS = Math.max(6, Math.ceil(studentCount / CONFIG.GRID.COLS) + 1); // +1 for safety/spacing
+
+    // 2. Define standard seats (indices 2, 3 in row 0, and rows 1-4)
+    const standardIndices = new Set();
+    [2, 3].forEach(c => standardIndices.add(0 * CONFIG.GRID.COLS + c));
     for (let r = 1; r <= 4; r++) {
         for (let c = 0; c < CONFIG.GRID.COLS; c++) {
-            activeSeats.push({ idx: r * CONFIG.GRID.COLS + c, r: r, c: c });
+            standardIndices.add(r * CONFIG.GRID.COLS + c);
         }
     }
+
+    // 3. Populate activeSeats
+    // Priority 1: Standard 26 seats
+    standardIndices.forEach(idx => {
+        const r = Math.floor(idx / CONFIG.GRID.COLS);
+        const c = idx % CONFIG.GRID.COLS;
+        activeSeats.push({ idx, r, c });
+    });
+
+    // Priority 2: Fill remaining of 6x6 if needed
+    if (studentCount > activeSeats.length) {
+        for (let r = 0; r < 6; r++) {
+            for (let c = 0; c < CONFIG.GRID.COLS; c++) {
+                const idx = r * CONFIG.GRID.COLS + c;
+                if (!standardIndices.has(idx) && activeSeats.length < studentCount) {
+                    activeSeats.push({ idx, r, c });
+                }
+            }
+        }
+    }
+
+    // Priority 3: Add more if studentCount > 36
+    if (studentCount > activeSeats.length) {
+        for (let r = 6; r < CONFIG.GRID.ROWS; r++) {
+            for (let c = 0; c < CONFIG.GRID.COLS; c++) {
+                const idx = r * CONFIG.GRID.COLS + c;
+                if (activeSeats.length < studentCount) {
+                    activeSeats.push({ idx, r, c });
+                }
+            }
+        }
+    }
+
     TOTAL_SEATS = activeSeats.length;
 }
 
@@ -271,6 +309,8 @@ function canBeAt(student, index) {
 async function renderSeating(seats, isSilent = false, prevAssignment = []) {
     if (isEditMode) toggleEditMode();
     ELEMENTS.seatingGrid.innerHTML = '';
+    ELEMENTS.seatingGrid.style.setProperty('--grid-cols', CONFIG.GRID.COLS);
+    
     const seatElements = [];
 
     // Sort: Bottom rows (near teacher) first for sequential reveal
@@ -433,6 +473,7 @@ async function handleFileLoad() {
             ? await parseXLSX(file) 
             : parseCSV(await file.text());
         
+        initDefaultLayout(students.length);
         currentAssignment = new Array(TOTAL_SEATS).fill(null);
         renderUnassignedList();
         renderSeating(currentAssignment, true);
@@ -492,6 +533,7 @@ function toggleEditMode() {
 
 function renderEditGrid() {
     ELEMENTS.seatingGrid.innerHTML = '';
+    ELEMENTS.seatingGrid.style.setProperty('--grid-cols', CONFIG.GRID.COLS);
     const seatIdxs = new Set(activeSeats.map(s => s.idx));
     for (let r = 0; r < CONFIG.GRID.ROWS; r++) {
         for (let c = 0; c < CONFIG.GRID.COLS; c++) {
