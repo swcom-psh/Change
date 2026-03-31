@@ -1,18 +1,17 @@
 :root {
-    --bg-color: #f0f0eb;
-    --card-bg: #ffffff;
-    --border-color: #000000;
-    --shadow-color: #000000;
-    --primary-color: #3D5AFE;
-    /* Blue */
-    --accent-color: #FF5A5F;
-    /* Red */
-    --highlight-color: #FFC107;
-    /* Yellow */
-    --text-color: #000000;
-
-    --border-width: 3px;
-    --shadow-offset: 5px;
+    --bg-gradient: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%);
+    --card-bg: rgba(255, 255, 255, 0.75);
+    --border-color: rgba(255, 183, 197, 0.5); /* Soft pink border */
+    --shadow-color: rgba(255, 183, 197, 0.2); 
+    --primary-color: #ff9aa2; /* Cherry Pink */
+    --primary-hover: #ff848e;
+    --accent-color: #ffb7b2;
+    --highlight-color: #ffd3b6;
+    --text-color: #4a4a4a;
+    --border-radius: 16px;
+    --border-width: 1.5px;
+    --shadow-offset: 8px;
+    --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 }
 
 * {
@@ -20,18 +19,25 @@
 }
 
 body {
-    background-color: var(--bg-color);
-    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg-gradient);
+    font-family: var(--font-family);
     color: var(--text-color);
     margin: 0;
     padding: 20px;
+    min-height: 100vh;
 }
 
-h1,
-h2,
-h3 {
-    font-family: 'Black Han Sans', sans-serif;
+h1, h2, h3 {
     margin: 0;
+    color: #4a4a4a;
+}
+
+h1 {
+    font-weight: 800;
+}
+
+h2 {
+    font-weight: 700;
 }
 
 .container {
@@ -39,24 +45,52 @@ h3 {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 25px;
+}
+
+/* Glassmorphism utility */
+.glass {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 var(--shadow-offset) 24px var(--shadow-color);
 }
 
 /* Header */
 .main-header {
-    background-color: var(--highlight-color);
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow-color);
-    padding: 20px;
+    padding: 25px;
     text-align: center;
-    font-size: 1.5rem;
-    transform: rotate(-1deg);
-    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.main-header::before {
+    content: '🌸';
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-15deg);
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+.main-header::after {
+    content: '🌸';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%) rotate(15deg);
+    font-size: 2.5rem;
+    opacity: 0.8;
 }
 
 .main-header h1 {
-    font-size: 3rem;
-    text-shadow: 2px 2px 0 #fff;
+    font-size: 2.5rem;
+    color: #d16b80;
+    letter-spacing: -0.5px;
 }
 
 /* Controls */
@@ -67,83 +101,114 @@ h3 {
 }
 
 .control-card {
-    background: var(--card-bg);
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow-color);
-    padding: 20px;
+    padding: 25px;
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
 .control-card h2 {
-    font-size: 1.5rem;
-    border-bottom: 2px solid var(--border-color);
+    font-size: 1.3rem;
+    color: #d16b80;
+    border-bottom: 1.5px solid var(--border-color);
     padding-bottom: 10px;
     margin-bottom: 5px;
 }
 
 input[type="file"] {
-    font-family: 'Do Hyeon', sans-serif;
-    font-size: 1.1rem;
-    padding: 10px;
-    background: #eee;
-    border: 2px solid #000;
+    font-family: var(--font-family);
+    font-size: 1rem;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     cursor: pointer;
+    color: #555;
+    transition: all 0.2s ease;
+}
+
+input[type="file"]:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .help-text {
     font-size: 0.9rem;
-    color: #555;
+    color: #777;
     margin: 0;
 }
 
 .button-group {
     display: flex;
-    gap: 10px;
+    gap: 12px;
 }
 
 button {
     flex: 1;
-    font-family: 'Black Han Sans', sans-serif;
-    font-size: 1.1rem;
-    /* Slightly smaller to fit better */
-    padding: 12px 10px;
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: 3px 3px 0 var(--shadow-color);
+    font-family: var(--font-family);
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 14px 12px;
+    border: none;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.1s;
-    white-space: nowrap;
-    /* Prevent awkward wrapping */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
+button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px var(--shadow-color);
 }
 
 button:active {
-    transform: translate(3px, 3px);
-    box-shadow: 0 0 0 var(--shadow-color);
+    transform: translateY(1px);
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+button:disabled {
+    background-color: #ddd !important;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .btn-primary {
     background-color: var(--primary-color);
-    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
 }
 
 .btn-secondary {
-    background-color: var(--card-bg);
-    color: var(--text-color);
+    background-color: #fff;
+    color: var(--primary-color);
+    border: 1.5px solid var(--primary-color);
+}
+
+.btn-secondary:hover {
+    background-color: #fffafb;
+    color: var(--primary-hover);
 }
 
 .btn-info {
-    background-color: #00BCD4;
-    color: white;
+    background-color: #b5ead7;
+    color: #3a7a5f;
+}
+
+.btn-info:hover {
+    background-color: #9fdfc7;
 }
 
 .btn-active {
-    background-color: #FF9800;
-    color: white;
-    box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.2);
+    background-color: #ffd3b6;
+    color: #b8621b;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 /* Main Layout with Sidebar */
@@ -154,13 +219,10 @@ button:active {
 }
 
 .sidebar {
-    width: 260px;
-    min-width: 260px;
+    width: 280px;
+    min-width: 280px;
     flex-shrink: 0;
-    background: var(--card-bg);
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow-color);
-    padding: 20px;
+    padding: 25px;
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -171,15 +233,16 @@ button:active {
 }
 
 .sidebar h2 {
-    font-size: 1.5rem;
-    border-bottom: 2px solid var(--border-color);
+    font-size: 1.3rem;
+    color: #d16b80;
+    border-bottom: 1.5px solid var(--border-color);
     padding-bottom: 10px;
     text-align: center;
 }
 
 .sidebar-help {
     font-size: 0.9rem;
-    color: #555;
+    color: #777;
     text-align: center;
     margin-bottom: 10px;
 }
@@ -187,104 +250,117 @@ button:active {
 .unassigned-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    min-height: 100px;
-    border: 2px dashed #ccc;
-    padding: 10px;
-    background: #f9f9f9;
+    gap: 12px;
+    min-height: 120px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.4);
+    transition: all 0.3s;
 }
 
 .unassigned-list.drag-over {
-    background-color: #e3f2fd;
+    background-color: rgba(255, 255, 255, 0.9);
     border-color: var(--primary-color);
 }
 
 .empty-list-msg {
     text-align: center;
-    color: #888;
+    color: #999;
     font-size: 0.9rem;
     margin: auto;
 }
 
 .unassigned-student {
-    background: white;
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: 2px 2px 0 var(--shadow-color);
-    padding: 10px;
-    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
     cursor: grab;
     display: flex;
     align-items: center;
-    gap: 10px;
-    transition: transform 0.2s;
-    font-family: 'Do Hyeon', sans-serif;
-    font-size: 1.2rem;
+    gap: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(255, 183, 197, 0.15);
 }
 
 .unassigned-student:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 4px 4px 0 var(--shadow-color);
-    background-color: #fff9c4;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 16px rgba(255, 183, 197, 0.3);
+    background-color: #fff;
     z-index: 10;
 }
 
 .unassigned-student[draggable="true"]:active {
     cursor: grabbing;
+    transform: scale(0.95);
 }
 
 .unassigned-student.dragging {
-    opacity: 0.5;
-    border: 2px dashed #000;
+    opacity: 0.6;
+    border: 2px dashed var(--primary-color);
 }
 
 .unassigned-avatar {
-    width: 30px;
-    height: 30px;
-    border: 2px solid #000;
+    width: 36px;
+    height: 36px;
+    background: var(--highlight-color);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
-    font-family: 'Black Han Sans', sans-serif;
-    font-weight: bold;
-    color: #000;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #666;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
 /* Classroom */
 .classroom {
-    background: var(--card-bg);
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow-color);
-    padding: 20px 30px;
+    padding: 30px 40px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 30px;
     flex: 1;
     min-width: 0;
 }
 
 .teacher-desk {
-    width: 200px;
+    width: 220px;
     height: 60px;
-    background-color: #333;
-    color: white;
-    font-family: 'Black Han Sans', sans-serif;
-    font-size: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #d16b80;
+    font-size: 1.4rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: 4px 4px 0 var(--shadow-color);
-    border-radius: 4px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(255, 183, 197, 0.2);
+    border: 1.5px solid var(--border-color);
+    position: relative;
+    letter-spacing: 2px;
+}
+
+.teacher-desk::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    border: 1px dashed rgba(255, 183, 197, 0.6);
+    border-radius: 6px;
 }
 
 .seating-grid {
     display: grid;
     grid-template-columns: repeat(var(--grid-cols, 6), minmax(0, 1fr));
     grid-auto-rows: auto;
-    gap: 15px;
+    gap: 16px;
     width: 100%;
     max-width: 900px;
 }
@@ -292,34 +368,34 @@ button:active {
 .empty-state {
     grid-column: 1 / -1;
     text-align: center;
-    padding: 50px;
-    font-family: 'Do Hyeon', sans-serif;
-    font-size: 1.5rem;
-    color: #888;
-    border: 2px dashed #ccc;
+    padding: 60px;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #999;
+    border: 2px dashed rgba(255, 183, 197, 0.6);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.4);
 }
 
 .seat {
     aspect-ratio: 4/3;
-    background: white;
-    border: 2px solid var(--border-color);
-    box-shadow: 3px 3px 0 var(--shadow-color);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1.5px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(255, 183, 197, 0.15);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px;
-    border-radius: 8px;
-    transition: transform 0.2s;
+    padding: 12px;
+    border-radius: 14px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Spring animation */
     position: relative;
-    font-family: 'Do Hyeon', sans-serif;
 }
 
 .seat:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 5px 5px 0 var(--shadow-color);
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 12px 24px rgba(255, 183, 197, 0.25);
     z-index: 10;
-    background-color: #fff9c4;
 }
 
 .seat[draggable="true"] {
@@ -331,94 +407,85 @@ button:active {
 }
 
 .seat.dragging {
-    opacity: 0.5;
-    border: 2px dashed #000;
+    opacity: 0.6;
+    border: 2px dashed var(--primary-color);
+    transform: scale(0.95);
 }
 
 .seat.drag-over {
-    background-color: var(--highlight-color) !important;
-    transform: scale(1.05);
-    border: 3px solid #000;
+    background-color: #fff0f5 !important;
+    transform: scale(1.08);
+    border: 2px solid var(--primary-color);
     z-index: 5;
+    box-shadow: 0 0 20px rgba(255, 154, 162, 0.4);
 }
 
 .seat-number {
     position: absolute;
-    top: 5px;
-    left: 8px;
-    font-size: 0.9rem;
-    color: #666;
+    top: 8px;
+    left: 10px;
+    font-size: 0.85rem;
+    color: #999;
+    font-weight: 600;
 }
 
 .student-name {
     font-size: 1.3rem;
+    font-weight: 700;
     text-align: center;
     word-break: keep-all;
+    color: #444;
 }
 
 /* Edit Mode Styles */
 .seat-edit-cell {
     aspect-ratio: 4/3;
-    border: 2px dashed #ccc;
-    border-radius: 8px;
+    border: 2px dashed rgba(255, 183, 197, 0.6);
+    border-radius: 14px;
     cursor: pointer;
     transition: all 0.2s;
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .seat-edit-cell:hover {
-    background-color: rgba(0, 188, 212, 0.1);
-    border-color: #00BCD4;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-color: var(--primary-color);
 }
 
 .seat-edit-cell.active {
-    background-color: white;
-    border: 2px solid var(--border-color);
-    box-shadow: 3px 3px 0 var(--shadow-color);
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1.5px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(255, 183, 197, 0.2);
 }
 
-.edit-hint {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: 10px;
+/* Background hints for Front/Back seats */
+.seat.zone-back {
+    background: linear-gradient(to bottom right, #fff, #fff0f5);
 }
 
-/* Row Indicators (Optional visual cue) */
-/* These will be updated dynamically by JS, but keeping classes for reference */
-.seat[data-row="0"],
-.seat[data-row="1"] {
-    /* Back (Far from teacher) */
-    border-color: #BF360C;
-    background-color: #FBE9E7;
+.seat.zone-front {
+    background: linear-gradient(to bottom right, #fff, #f0f8ff);
 }
 
-/* Assuming standard layout has rows up to 5-6 */
-.seat[data-row="5"],
-.seat[data-row="6"] {
-    /* Front (Near teacher) */
-    border-color: #006064;
-    background-color: #E0F7FA;
-}
-
-/* Avatar Styles - Updated for modern Profile style */
+/* Avatar Styles */
 .student-avatar {
-    width: 42px;
-    height: 42px;
-    border: 2px solid #000;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    font-family: 'Black Han Sans', sans-serif;
-    box-shadow: 3px 3px 0 #000;
-    transition: transform 0.3s;
-    background-color: #fff;
-    color: #000;
+    font-size: 1.1rem;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background-color: #f8f9fa;
+    color: #666;
 }
 
 .seat:hover .student-avatar {
-    transform: rotate(10deg) scale(1.1);
+    transform: rotate(15deg) scale(1.15);
 }
 
 /* Classroom Objects */
@@ -432,62 +499,22 @@ button:active {
     font-size: 2.5rem;
     pointer-events: none;
     z-index: 1;
-    filter: drop-shadow(2px 2px 0 #000);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
 }
 
 /* Spotlight & Dimming */
 .classroom.is-announcing .seat:not(.spotlight) {
-    opacity: 0.3;
-    filter: grayscale(0.8);
-    transform: scale(0.95);
+    opacity: 0.4;
+    filter: grayscale(0.5);
+    transform: scale(0.96);
 }
 
 .seat.spotlight {
     z-index: 200;
-    transform: scale(1.15) !important;
-    box-shadow: 0 0 20px rgba(255, 235, 59, 0.6), 8px 8px 0 #000 !important;
-    border: 4px solid var(--highlight-color) !important;
-}
-
-/* Report Card */
-.report-card {
-    background: #fff;
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow-color);
-    padding: 25px;
-    margin-top: 20px;
-}
-
-.report-card h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: var(--primary-color);
-    font-size: 2rem;
-}
-
-.report-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-}
-
-.report-item {
-    padding: 15px;
-    border: 2px solid #000;
-    box-shadow: 3px 3px 0 #000;
-    border-radius: 8px;
-    background: #f9f9f9;
-}
-
-.report-item h3 {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-}
-
-.report-item p {
-    font-family: 'Do Hyeon', sans-serif;
-    font-size: 1.2rem;
-    margin: 0;
+    transform: scale(1.2) !important;
+    box-shadow: 0 0 30px rgba(255, 154, 162, 0.8), 0 10px 20px rgba(0,0,0,0.1) !important;
+    border: 3px solid var(--primary-color) !important;
+    background: #fffafa !important;
 }
 
 @media (max-width: 768px) {
@@ -502,18 +529,18 @@ button:active {
     .sidebar {
         width: 100%;
         position: static;
-        max-height: 300px;
+        max-height: 350px;
     }
 
     .seating-grid {
-        gap: 10px;
+        gap: 12px;
     }
 
     .seat {
-        padding: 5px;
+        padding: 8px;
     }
 
     .student-name {
-        font-size: 1rem;
+        font-size: 1.1rem;
     }
 }

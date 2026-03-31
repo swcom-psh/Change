@@ -9,13 +9,13 @@
 const CONFIG = {
     GRID: { ROWS: 6, COLS: 6 }, // Will be updated dynamically if needed
     ALGORITHM: {
-        ITERATIONS: 20000,
-        SCORE_LIKE: 20,
-        SCORE_DISLIKE: -100
+        ITERATIONS: 300000,
+        TEMP_INITIAL: 1000.0,
+        TEMP_FINAL: 0.1
     },
     COLORS: [
-        '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB', '#B3E5FC', '#B2EBF2', 
-        '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3', '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC'
+        '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA', '#FF9AA2', '#FDCCE5', '#E9E2D0',
+        '#F3C1C6', '#DAB894', '#E1D5E7', '#C5E1A5', '#FFF59D', '#FFCC80', '#B3E5FC', '#A5D6A7'
     ]
 };
 
@@ -170,15 +170,17 @@ function optimizeSeating(studentList, preAssigned = []) {
     const assignedIds = new Set(seats.filter(Boolean).map(s => s.id));
     const unassignedStudents = studentList.filter(s => !assignedIds.has(s.id));
 
-    // Fill remaining seats greedily based on fixed constraints (Front/Back)
+    // Fill remaining seats greedily based on fixed constraints
     seats = fillGreedyInitialAssignment(seats, unassignedStudents);
 
-    // Hill Climbing Optimization
-    return runHillClimbing(seats, preAssigned);
+    // Simulated Annealing Optimization
+    return runSimulatedAnnealing(seats, preAssigned);
 }
 
 function fillGreedyInitialAssignment(seats, unassigned) {
     const groups = { front: [], back: [], normal: [] };
+    
+    // Instead of forcing lock, we still try to prioritize them into correct bins.
     unassigned.forEach(s => {
         if (s.fixed.includes('앞')) groups.front.push(s);
         else if (s.fixed.includes('뒤') || s.fixed.includes('뒷')) groups.back.push(s);
@@ -217,10 +219,15 @@ function fillGreedyInitialAssignment(seats, unassigned) {
     return seats;
 }
 
-function runHillClimbing(seats, lockedSeeds) {
+function runSimulatedAnnealing(seats, lockedSeeds) {
     let currentScore = calculateScore(seats);
+    let bestScore = currentScore;
+    let bestSeats = [...seats];
 
     for (let i = 0; i < CONFIG.ALGORITHM.ITERATIONS; i++) {
+        // Temperature schedule
+        const temp = CONFIG.ALGORITHM.TEMP_INITIAL * Math.pow(CONFIG.ALGORITHM.TEMP_FINAL / CONFIG.ALGORITHM.TEMP_INITIAL, i / CONFIG.ALGORITHM.ITERATIONS);
+
         const idx1 = Math.floor(Math.random() * TOTAL_SEATS);
         const idx2 = Math.floor(Math.random() * TOTAL_SEATS);
 
@@ -229,38 +236,62 @@ function runHillClimbing(seats, lockedSeeds) {
         const s1 = seats[idx1];
         const s2 = seats[idx2];
 
-        if (!canBeAt(s1, idx2) || !canBeAt(s2, idx1)) continue;
-
-        // Swap
+        // Swap (No canBeAt check anymore! Handled by huge penalty in calculateScore)
         seats[idx1] = s2;
         seats[idx2] = s1;
 
         const newScore = calculateScore(seats);
-        if (newScore > currentScore || (newScore === currentScore && Math.random() < 0.2)) {
+        const delta = newScore - currentScore;
+
+        if (delta > 0 || Math.exp(delta / temp) > Math.random()) {
             currentScore = newScore;
+            if (currentScore > bestScore) {
+                bestScore = currentScore;
+                bestSeats = [...seats];
+            }
         } else {
             // Revert
             seats[idx1] = s1;
             seats[idx2] = s2;
         }
     }
-    return seats;
+    return bestSeats;
 }
 
 function calculateScore(seats) {
     let score = 0;
     const nameToIdx = {};
+    const maxRow = Math.max(...activeSeats.map(s => s.r));
+    
     seats.forEach((s, idx) => { if (s) nameToIdx[s.name] = idx; });
 
     seats.forEach((student, idx) => {
         if (!student) return;
 
+        const seat = activeSeats[idx];
+        
+        // Fixed Seat Penalty (Lock-free behavior)
+        if (student.fixed.includes('앞') && seat.r < maxRow - 1) {
+            score -= 2000;
+        }
+        if ((student.fixed.includes('뒤') || student.fixed.includes('뒷')) && seat.r > 1) {
+            score -= 2000;
+        }
+
         // Like Score
         student.likes.forEach(friend => {
             const fIdx = nameToIdx[friend];
             if (fIdx !== undefined) {
-                const weight = getNeighborWeight(activeSeats[idx], activeSeats[fIdx]);
-                if (weight > 0) score += CONFIG.ALGORITHM.SCORE_LIKE * weight;
+                const dist = Math.sqrt(Math.pow(seat.r - activeSeats[fIdx].r, 2) + Math.pow(seat.c - activeSeats[fIdx].c, 2));
+                const bonus = Math.max(0, 50 - (dist * 15));
+                
+                let partnerBonus = 0;
+                if (Math.abs(seat.r - activeSeats[fIdx].r) === 0 && Math.abs(seat.c - activeSeats[fIdx].c) === 1) {
+                    const minC = Math.min(seat.c, activeSeats[fIdx].c);
+                    if (minC === 0 || minC === 2 || minC === 4) partnerBonus = 30;
+                }
+                
+                score += (bonus + partnerBonus);
             }
         });
 
@@ -270,36 +301,16 @@ function calculateScore(seats) {
             if (eIdx !== undefined) {
                 const s1 = activeSeats[idx];
                 const s2 = activeSeats[eIdx];
-                if (Math.abs(s1.r - s2.r) <= 1 && Math.abs(s1.c - s2.c) <= 1) {
-                    score += CONFIG.ALGORITHM.SCORE_DISLIKE;
+                const dist = Math.sqrt(Math.pow(s1.r - s2.r, 2) + Math.pow(s1.c - s2.c, 2));
+                
+                if (dist > 0) {
+                    const penalty = Math.round(-300 / dist);
+                    score += penalty;
                 }
             }
         });
     });
     return score;
-}
-
-function getNeighborWeight(s1, s2) {
-    const rDiff = Math.abs(s1.r - s2.r);
-    const cDiff = Math.abs(s1.c - s2.c);
-
-    if (rDiff === 0 && cDiff === 1) {
-        const minC = Math.min(s1.c, s2.c);
-        return (minC === 0 || minC === 2 || minC === 4) ? 1.0 : 0; // Partner vs Aisle
-    }
-    if (rDiff === 1 && cDiff === 0) return 0.5; // Vertical
-    if (rDiff === 1 && cDiff === 1) return 0.3; // Diagonal
-    return 0;
-}
-
-function canBeAt(student, index) {
-    if (!student) return true;
-    const seat = activeSeats[index];
-    const maxRow = Math.max(...activeSeats.map(s => s.r));
-
-    if (student.fixed.includes('앞')) return seat.r >= maxRow - 1;
-    if (student.fixed.includes('뒤') || student.fixed.includes('뒷')) return seat.r <= 1;
-    return true;
 }
 
 /* ==========================================
@@ -373,8 +384,8 @@ function createSeatElement(seat, i, maxRow) {
         <div class="student-name"></div>
     `;
 
-    if (seat.r >= maxRow - 1) div.style.backgroundColor = "#e8f5e9";
-    if (seat.r <= 1) div.style.backgroundColor = "#ffebee";
+    if (seat.r >= maxRow - 1) div.classList.add('zone-front');
+    if (seat.r <= 1) div.classList.add('zone-back');
 
     div.addEventListener('dragstart', handleDragStart);
     div.addEventListener('dragover', handleDragOver);

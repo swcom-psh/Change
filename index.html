@@ -6,25 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>자리바꾸기 프로그램</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts for Neo-Brutalism vibe -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap"
-        rel="stylesheet">
+    <!-- Fonts for Cherry Blossom Glassmorphism vibe -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 </head>
 
 <body>
     <div class="container">
-        <header class="main-header">
+        <header class="main-header glass">
             <h1>자리바꾸기 프로그램</h1>
         </header>
 
         <section class="controls">
-            <div class="control-card">
+            <div class="control-card glass">
                 <h2>1. 데이터 업로드</h2>
                 <input type="file" id="csvInput" accept=".csv, .xlsx, .xls">
                 <p class="help-text">CSV 또는 엑셀(.xlsx) 파일을 선택해주세요. (양식이 없다면 정보T에게 문의하세요)</p>
             </div>
-            <div class="control-card">
+            <div class="control-card glass">
                 <h2>2. 배치 실행</h2>
                 <div class="button-group">
                     <button id="generateBtn" class="btn-primary">자리 배치하기</button>
@@ -35,7 +33,7 @@
         </section>
 
         <div class="main-body">
-            <aside class="sidebar" id="sidebar">
+            <aside class="sidebar glass" id="sidebar">
                 <h2>대기 명단</h2>
                 <div class="sidebar-help">명단을 드래그하여 자리에<br>배치하거나 뺄 수 있습니다.</div>
                 <div id="unassignedList" class="unassigned-list">
@@ -43,7 +41,7 @@
                 </div>
             </aside>
 
-            <section class="classroom">
+            <section class="classroom glass">
                 <div class="seating-grid" id="seatingGrid">
                     <!-- Seats will be generated here -->
                     <div class="empty-state">파일을 업로드하거나<br>바로 '자리 배치하기'를 눌러주세요!</div>
