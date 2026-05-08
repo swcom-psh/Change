@@ -318,7 +318,11 @@ function calculateScore(seats) {
    ========================================== */
 
 async function renderSeating(seats, isSilent = false, prevAssignment = []) {
-    if (isEditMode) toggleEditMode();
+    if (isEditMode) {
+        isEditMode = false;
+        ELEMENTS.editBtn.textContent = "자리 구조 수정";
+        ELEMENTS.editBtn.classList.remove('btn-active');
+    }
     ELEMENTS.seatingGrid.innerHTML = '';
     ELEMENTS.seatingGrid.style.setProperty('--grid-cols', CONFIG.GRID.COLS);
     
@@ -538,8 +542,19 @@ function toggleEditMode() {
     isEditMode = !isEditMode;
     ELEMENTS.editBtn.textContent = isEditMode ? "수정 완료" : "자리 구조 수정";
     ELEMENTS.editBtn.classList.toggle('btn-active', isEditMode);
-    if (isEditMode) renderEditGrid();
-    else ELEMENTS.seatingGrid.innerHTML = '<div class="empty-state">배치 완료 후 결과가 표시됩니다.</div>';
+    
+    if (isEditMode) {
+        renderEditGrid();
+    } else {
+        if (currentAssignment.length !== TOTAL_SEATS) {
+            const newAssignment = new Array(TOTAL_SEATS).fill(null);
+            for (let i = 0; i < Math.min(currentAssignment.length, TOTAL_SEATS); i++) {
+                newAssignment[i] = currentAssignment[i];
+            }
+            currentAssignment = newAssignment;
+        }
+        renderSeating(currentAssignment, true);
+    }
 }
 
 function renderEditGrid() {
@@ -631,3 +646,5 @@ if (ELEMENTS.unassignedList) {
 }
 
 initDefaultLayout();
+currentAssignment = new Array(TOTAL_SEATS).fill(null);
+renderSeating(currentAssignment, true);
