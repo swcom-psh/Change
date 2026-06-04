@@ -4,17 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>자리바꾸기 프로그램</title>
+    <title>🌊 강원사대부고 자리 바꾸기 프로그램 🌴</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Fonts for Cherry Blossom Glassmorphism vibe -->
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <!-- Fonts for Summer Glassmorphism vibe -->
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 </head>
 
 <body>
+    <!-- Floating Water Bubble Particles Background -->
+    <div id="particles-js"></div>
+
     <div class="container">
         <header class="main-header glass">
-            <h1>자리바꾸기 프로그램</h1>
+            <h1> 강원 사대부고 자리바꾸기</h1>
         </header>
+
+        <div class="wave-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" class="wave-svg" preserveAspectRatio="none">
+                <path fill="rgba(255,255,255,0.25)"
+                    d="M0,32L80,48C160,64,320,96,480,96C640,96,800,64,960,48C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z">
+                </path>
+            </svg>
+        </div>
 
         <section class="controls">
             <div class="control-card glass">
@@ -55,6 +67,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="script.js"></script>
 </body>
 

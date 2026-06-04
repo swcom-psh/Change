@@ -1,16 +1,17 @@
 :root {
-    --bg-gradient: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%);
-    --card-bg: rgba(255, 255, 255, 0.75);
-    --border-color: rgba(255, 183, 197, 0.5); /* Soft pink border */
-    --shadow-color: rgba(255, 183, 197, 0.2); 
-    --primary-color: #ff9aa2; /* Cherry Pink */
-    --primary-hover: #ff848e;
-    --accent-color: #ffb7b2;
-    --highlight-color: #ffd3b6;
-    --text-color: #4a4a4a;
-    --border-radius: 16px;
+    --bg-gradient: linear-gradient(135deg, hsl(180, 80%, 82%) 0%, hsl(195, 85%, 85%) 50%, hsl(205, 90%, 88%) 100%);
+    --card-bg: rgba(255, 255, 255, 0.62); /* Slightly higher opacity for white acrylic look */
+    --border-color: rgba(255, 255, 255, 0.85); /* Semi-transparent glossy white border */
+    --shadow-color: rgba(0, 80, 130, 0.07); 
+    --primary-color: hsl(195, 95%, 42%); /* Vibrant sky blue */
+    --primary-hover: hsl(195, 95%, 35%);
+    --accent-color: hsl(172, 85%, 40%); /* Reef lagoon turquoise */
+    --highlight-color: hsl(45, 100%, 62%); /* Golden sand beach */
+    --coral-color: hsl(14, 95%, 62%); /* Sunrise sunset coral */
+    --text-color: hsl(210, 38%, 18%); /* Deep navy high-contrast slate text */
+    --border-radius: 20px;
     --border-width: 1.5px;
-    --shadow-offset: 8px;
+    --shadow-offset: 10px;
     --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 }
 
@@ -25,19 +26,20 @@ body {
     margin: 0;
     padding: 20px;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 h1, h2, h3 {
     margin: 0;
-    color: #4a4a4a;
+    color: var(--text-color);
 }
 
 h1 {
-    font-weight: 800;
+    font-weight: 900;
 }
 
 h2 {
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .container {
@@ -46,21 +48,23 @@ h2 {
     display: flex;
     flex-direction: column;
     gap: 25px;
+    position: relative;
+    z-index: 10;
 }
 
 /* Glassmorphism utility */
 .glass {
     background: var(--card-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: var(--border-width) solid var(--border-color);
     border-radius: var(--border-radius);
-    box-shadow: 0 var(--shadow-offset) 24px var(--shadow-color);
+    box-shadow: 0 var(--shadow-offset) 30px var(--shadow-color);
 }
 
 /* Header */
 .main-header {
-    padding: 25px;
+    padding: 30px;
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -68,29 +72,34 @@ h2 {
 }
 
 .main-header::before {
-    content: '🌸';
+    content: '🌴';
     position: absolute;
-    left: 20px;
+    left: 30px;
     top: 50%;
     transform: translateY(-50%) rotate(-15deg);
-    font-size: 2.5rem;
-    opacity: 0.8;
+    font-size: 2.7rem;
+    opacity: 0.9;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
 }
 
 .main-header::after {
-    content: '🌸';
+    content: '🌊';
     position: absolute;
-    right: 20px;
+    right: 30px;
     top: 50%;
     transform: translateY(-50%) rotate(15deg);
-    font-size: 2.5rem;
-    opacity: 0.8;
+    font-size: 2.7rem;
+    opacity: 0.9;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
 }
 
 .main-header h1 {
-    font-size: 2.5rem;
-    color: #d16b80;
-    letter-spacing: -0.5px;
+    font-size: 2.7rem;
+    background: linear-gradient(135deg, hsl(200, 95%, 42%) 0%, hsl(175, 80%, 35%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+    font-weight: 900;
 }
 
 /* Controls */
@@ -109,8 +118,8 @@ h2 {
 
 .control-card h2 {
     font-size: 1.3rem;
-    color: #d16b80;
-    border-bottom: 1.5px solid var(--border-color);
+    color: var(--primary-color);
+    border-bottom: 1.5px solid rgba(0, 119, 182, 0.15);
     padding-bottom: 10px;
     margin-bottom: 5px;
 }
@@ -119,22 +128,22 @@ input[type="file"] {
     font-family: var(--font-family);
     font-size: 1rem;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
     cursor: pointer;
-    color: #555;
-    transition: all 0.2s ease;
+    color: var(--text-color);
+    transition: all 0.25s ease;
 }
 
 input[type="file"]:hover {
     border-color: var(--primary-color);
-    box-shadow: 0 4px 12px var(--shadow-color);
+    box-shadow: 0 4px 15px rgba(0, 119, 182, 0.1);
 }
 
 .help-text {
     font-size: 0.9rem;
-    color: #777;
+    color: hsl(215, 15%, 45%);
     margin: 0;
 }
 
@@ -146,13 +155,13 @@ input[type="file"]:hover {
 button {
     flex: 1;
     font-family: var(--font-family);
-    font-weight: 600;
+    font-weight: 750;
     font-size: 1.05rem;
     padding: 14px 12px;
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -161,54 +170,59 @@ button {
 }
 
 button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px var(--shadow-color);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 119, 182, 0.18);
 }
 
 button:active {
     transform: translateY(1px);
-    box-shadow: 0 4px 8px var(--shadow-color);
+    box-shadow: 0 4px 8px rgba(0, 119, 182, 0.1);
 }
 
 button:disabled {
-    background-color: #ddd !important;
+    background-color: hsl(210, 16%, 82%) !important;
+    color: white !important;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color) 0%, hsl(200, 95%, 38%) 100%);
+    box-shadow: 0 4px 12px rgba(0, 119, 182, 0.15);
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
+    background: linear-gradient(135deg, hsl(200, 95%, 38%) 0%, hsl(200, 95%, 30%) 100%);
 }
 
 .btn-secondary {
-    background-color: #fff;
+    background-color: rgba(255, 255, 255, 0.7);
     color: var(--primary-color);
     border: 1.5px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 119, 182, 0.05);
 }
 
 .btn-secondary:hover {
-    background-color: #fffafb;
+    background-color: #ffffff;
     color: var(--primary-hover);
+    border-color: var(--primary-hover);
 }
 
 .btn-info {
-    background-color: #b5ead7;
-    color: #3a7a5f;
+    background: linear-gradient(135deg, var(--accent-color) 0%, hsl(175, 80%, 35%) 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(10, 147, 150, 0.15);
 }
 
 .btn-info:hover {
-    background-color: #9fdfc7;
+    background: linear-gradient(135deg, hsl(175, 80%, 35%) 0%, hsl(175, 80%, 28%) 100%);
 }
 
 .btn-active {
-    background-color: #ffd3b6;
-    color: #b8621b;
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, var(--highlight-color) 0%, hsl(45, 100%, 55%) 100%);
+    color: hsl(215, 28%, 22%);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Main Layout with Sidebar */
@@ -234,15 +248,15 @@ button:disabled {
 
 .sidebar h2 {
     font-size: 1.3rem;
-    color: #d16b80;
-    border-bottom: 1.5px solid var(--border-color);
+    color: var(--primary-color);
+    border-bottom: 1.5px solid rgba(0, 119, 182, 0.15);
     padding-bottom: 10px;
     text-align: center;
 }
 
 .sidebar-help {
     font-size: 0.9rem;
-    color: #777;
+    color: hsl(215, 15%, 45%);
     text-align: center;
     margin-bottom: 10px;
 }
@@ -252,44 +266,45 @@ button:disabled {
     flex-direction: column;
     gap: 12px;
     min-height: 120px;
-    border: 2px dashed var(--border-color);
+    border: 2px dashed rgba(0, 119, 182, 0.25);
     border-radius: 12px;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.35);
     transition: all 0.3s;
 }
 
 .unassigned-list.drag-over {
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.85);
     border-color: var(--primary-color);
 }
 
 .empty-list-msg {
     text-align: center;
-    color: #999;
+    color: hsl(215, 15%, 60%);
     font-size: 0.9rem;
     margin: auto;
 }
 
 .unassigned-student {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
     padding: 12px;
     cursor: grab;
     display: flex;
     align-items: center;
     gap: 12px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    font-weight: 600;
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 700;
     font-size: 1.1rem;
-    box-shadow: 0 2px 8px rgba(255, 183, 197, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 119, 182, 0.04);
 }
 
 .unassigned-student:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 16px rgba(255, 183, 197, 0.3);
-    background-color: #fff;
+    box-shadow: 0 8px 20px rgba(0, 119, 182, 0.12);
+    background-color: #ffffff;
+    border-color: var(--primary-color);
     z-index: 10;
 }
 
@@ -313,7 +328,7 @@ button:disabled {
     justify-content: center;
     font-size: 0.9rem;
     font-weight: 700;
-    color: #666;
+    color: hsl(215, 28%, 22%);
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
@@ -332,17 +347,17 @@ button:disabled {
     width: 220px;
     height: 60px;
     background-color: rgba(255, 255, 255, 0.9);
-    color: #d16b80;
+    color: var(--primary-color);
     font-size: 1.4rem;
-    font-weight: 700;
+    font-weight: 800;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 12px;
-    box-shadow: 0 8px 16px rgba(255, 183, 197, 0.2);
+    box-shadow: 0 8px 20px rgba(0, 119, 182, 0.10);
     border: 1.5px solid var(--border-color);
     position: relative;
-    letter-spacing: 2px;
+    letter-spacing: 4px;
 }
 
 .teacher-desk::before {
@@ -352,7 +367,7 @@ button:disabled {
     left: 6px;
     right: 6px;
     bottom: 6px;
-    border: 1px dashed rgba(255, 183, 197, 0.6);
+    border: 1px dashed rgba(0, 119, 182, 0.35);
     border-radius: 6px;
 }
 
@@ -371,30 +386,31 @@ button:disabled {
     padding: 60px;
     font-size: 1.3rem;
     font-weight: 500;
-    color: #999;
-    border: 2px dashed rgba(255, 183, 197, 0.6);
+    color: hsl(215, 15%, 55%);
+    border: 2px dashed rgba(0, 119, 182, 0.3);
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .seat {
     aspect-ratio: 4/3;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1.5px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(255, 183, 197, 0.15);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1.5px solid rgba(0, 119, 182, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 119, 182, 0.03);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 12px;
-    border-radius: 14px;
+    border-radius: 16px;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Spring animation */
     position: relative;
 }
 
 .seat:hover {
-    transform: translateY(-5px) scale(1.03);
-    box-shadow: 0 12px 24px rgba(255, 183, 197, 0.25);
+    transform: translateY(-6px) scale(1.04);
+    box-shadow: 0 12px 28px rgba(0, 119, 182, 0.12);
+    border-color: var(--primary-color);
     z-index: 10;
 }
 
@@ -413,11 +429,11 @@ button:disabled {
 }
 
 .seat.drag-over {
-    background-color: #fff0f5 !important;
+    background-color: hsl(200, 95%, 96%) !important;
     transform: scale(1.08);
     border: 2px solid var(--primary-color);
     z-index: 5;
-    box-shadow: 0 0 20px rgba(255, 154, 162, 0.4);
+    box-shadow: 0 0 20px rgba(0, 119, 182, 0.3);
 }
 
 .seat-number {
@@ -425,46 +441,46 @@ button:disabled {
     top: 8px;
     left: 10px;
     font-size: 0.85rem;
-    color: #999;
+    color: hsl(215, 16%, 60%);
     font-weight: 600;
 }
 
 .student-name {
     font-size: 1.3rem;
-    font-weight: 700;
+    font-weight: 800;
     text-align: center;
     word-break: keep-all;
-    color: #444;
+    color: var(--text-color);
 }
 
 /* Edit Mode Styles */
 .seat-edit-cell {
     aspect-ratio: 4/3;
-    border: 2px dashed rgba(255, 183, 197, 0.6);
-    border-radius: 14px;
+    border: 2px dashed rgba(0, 119, 182, 0.3);
+    border-radius: 16px;
     cursor: pointer;
-    transition: all 0.2s;
-    background: rgba(255, 255, 255, 0.3);
+    transition: all 0.25s;
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .seat-edit-cell:hover {
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.6);
     border-color: var(--primary-color);
 }
 
 .seat-edit-cell.active {
     background-color: rgba(255, 255, 255, 0.95);
     border: 1.5px solid var(--primary-color);
-    box-shadow: 0 4px 12px rgba(255, 183, 197, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 119, 182, 0.15);
 }
 
 /* Background hints for Front/Back seats */
 .seat.zone-back {
-    background: linear-gradient(to bottom right, #fff, #fff0f5);
+    background: linear-gradient(to bottom right, #ffffff, hsl(205, 80%, 96%));
 }
 
 .seat.zone-front {
-    background: linear-gradient(to bottom right, #fff, #f0f8ff);
+    background: linear-gradient(to bottom right, #ffffff, hsl(43, 75%, 96%));
 }
 
 /* Avatar Styles */
@@ -477,11 +493,11 @@ button:disabled {
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: 800;
     box-shadow: 0 4px 10px rgba(0,0,0,0.06);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     background-color: #f8f9fa;
-    color: #666;
+    color: hsl(215, 28%, 22%);
 }
 
 .seat:hover .student-avatar {
@@ -512,9 +528,9 @@ button:disabled {
 .seat.spotlight {
     z-index: 200;
     transform: scale(1.2) !important;
-    box-shadow: 0 0 30px rgba(255, 154, 162, 0.8), 0 10px 20px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 0 30px rgba(0, 119, 182, 0.6), 0 10px 20px rgba(0,0,0,0.15) !important;
     border: 3px solid var(--primary-color) !important;
-    background: #fffafa !important;
+    background: #ffffff !important;
 }
 
 @media (max-width: 768px) {
@@ -543,4 +559,29 @@ button:disabled {
     .student-name {
         font-size: 1.1rem;
     }
+}
+
+#particles-js {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.wave-container {
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+    margin-top: -20px;
+    margin-bottom: 5px;
+    pointer-events: none;
+}
+
+.wave-svg {
+    width: 100%;
+    height: 40px;
+    transform: scaleY(-1); /* flip the wave downwards */
 }

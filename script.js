@@ -14,8 +14,8 @@ const CONFIG = {
         TEMP_FINAL: 0.1
     },
     COLORS: [
-        '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA', '#FF9AA2', '#FDCCE5', '#E9E2D0',
-        '#F3C1C6', '#DAB894', '#E1D5E7', '#C5E1A5', '#FFF59D', '#FFCC80', '#B3E5FC', '#A5D6A7'
+        '#b3e5fc', '#80deea', '#e0f2f1', '#e8f5e9', '#fff9c4', '#ffe0b2', '#ffccbc', '#d1c4e9',
+        '#81d4fa', '#4dd0e1', '#b2dfdb', '#c8e6c9', '#fff59d', '#ffb74d', '#ffab91', '#b39ddb'
     ]
 };
 
@@ -648,3 +648,71 @@ if (ELEMENTS.unassignedList) {
 initDefaultLayout();
 currentAssignment = new Array(TOTAL_SEATS).fill(null);
 renderSeating(currentAssignment, true);
+
+/* ==========================================
+   11. Initialize ParticlesJS (Summer Bubble Background)
+   ========================================== */
+if (window.particlesJS) {
+    particlesJS('particles-js', {
+        "particles": {
+            "number": {
+                "value": 40,
+                "density": {
+                    "enable": true,
+                    "value_area": 800
+                }
+            },
+            "color": {
+                "value": "#ffffff"
+            },
+            "shape": {
+                "type": "circle"
+            },
+            "opacity": {
+                "value": 0.4,
+                "random": true,
+                "anim": {
+                    "enable": true,
+                    "speed": 0.5,
+                    "opacity_min": 0.1,
+                    "sync": false
+                }
+            },
+            "size": {
+                "value": 8,
+                "random": true,
+                "anim": {
+                    "enable": true,
+                    "speed": 1.2,
+                    "size_min": 2,
+                    "sync": false
+                }
+            },
+            "line_linked": {
+                "enable": false
+            },
+            "move": {
+                "enable": true,
+                "speed": 1.5,
+                "direction": "top",
+                "random": true,
+                "straight": false,
+                "out_mode": "out",
+                "bounce": false
+            }
+        },
+        "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+                "onhover": {
+                    "enable": false
+                },
+                "onclick": {
+                    "enable": false
+                },
+                "resize": true
+            }
+        },
+        "retina_detect": true
+    });
+}
