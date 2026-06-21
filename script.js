@@ -645,9 +645,61 @@ if (ELEMENTS.unassignedList) {
     });
 }
 
-initDefaultLayout();
-currentAssignment = new Array(TOTAL_SEATS).fill(null);
-renderSeating(currentAssignment, true);
+const DEFAULT_CSV_DATA = `번호,이름,같이앉고싶은친구,기피하는친구,희망고정자리,이유
+1,권지훈,,,,
+2,김다율,,,뒷자리,시력이 좋다
+3,김서윤,,,,
+4,김선민,,,뒷자리,키가 커서 앞에 앉으면 앞을 다 가림
+5,김아린,,"이서후, 김태민",뒷자리,배에서 소리나면 민망해서 최대한 뒤에 가고싶어요ㅠ
+6,김은비,,,,
+7,김태민,,,,
+8,김하빈,,"차윤우, 김다율, 박재우, 권지훈",,
+9,박기령,,,,
+10,박소현,,,앞자리,공부!!!!!!!!집중!!!!!!!!!!
+11,박자희,,,,
+12,박재우,,,,
+13,서민주,,"차윤우, 박재우",,
+14,안성은,,,,
+15,이서후,,"장주영, 김아린, 김태민, 김선민, 전승민, 이온유",,
+16,이온유,,,,
+17,이재인,,차윤우,,
+18,이채원,,,,
+19,이효린,,,뒷자리,뒷쪽에 앉아서 판서 내용과 수업의 흐름을 한눈에 파악하고 싶기 때문입니다
+20,장주영,,,,
+21,전수빈,,,,
+22,전승민,,,,
+23,조문준,,,,
+24,차윤우,,,,
+25,한소희,,,,
+26,홍예은,,,,`;
+
+async function loadDefaultData() {
+    let csvText = "";
+    try {
+        const response = await fetch('자리 바꾸기 설문조사!!(응답) - 시트3.csv');
+        if (response.ok) {
+            csvText = await response.text();
+            console.log("Loaded student data from external CSV file.");
+        } else {
+            throw new Error("Fetch failed with status: " + response.status);
+        }
+    } catch (e) {
+        console.warn("Failed to fetch external CSV, using local fallback data: ", e);
+        csvText = DEFAULT_CSV_DATA;
+    }
+
+    try {
+        students = parseCSV(csvText);
+        initDefaultLayout(students.length);
+        currentAssignment = new Array(TOTAL_SEATS).fill(null);
+        renderUnassignedList();
+        renderSeating(currentAssignment, true);
+    } catch (err) {
+        console.error("Error parsing default data:", err);
+    }
+}
+
+loadDefaultData();
 
 /* ==========================================
    11. Initialize ParticlesJS (Summer Bubble Background)
