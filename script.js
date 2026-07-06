@@ -103,6 +103,11 @@ function initDefaultLayout(studentCount = 26) {
 /* ==========================================
    5. File Parsing Logic
    ========================================== */
+// Converts full-width digits (e.g. ３) and other full-width chars to ASCII equivalents
+function normalizeFixed(str) {
+    return String(str || '').trim().replace(/[\uFF01-\uFF5E]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).trim();
+}
+
 function parseCSV(text) {
     const lines = text.trim().split(/\r?\n/).filter(line => line.trim() !== "");
     lines.shift(); // Remove header
@@ -122,7 +127,7 @@ function parseCSV(text) {
             name: cols[1],
             likes: cols[2] ? cols[2].split(/[|\s,]+/).filter(Boolean) : [],
             dislikes: cols[3] ? cols[3].split(/[|\s,]+/).filter(Boolean) : [],
-            fixed: cols[4] || "",
+            fixed: normalizeFixed(cols[4]),
             reason: cols[5] || ""
         };
     });
@@ -145,8 +150,8 @@ function parseXLSX(file) {
                     name: String(cols[1] || "").trim().normalize('NFC'),
                     likes: cols[2] ? String(cols[2]).normalize('NFC').split(/[|\s,]+/).filter(Boolean) : [],
                     dislikes: cols[3] ? String(cols[3]).normalize('NFC').split(/[|\s,]+/).filter(Boolean) : [],
-                    fixed: String(cols[4] || "").normalize('NFC'),
-                    reason: String(cols[5] || "").normalize('NFC')
+                    fixed: normalizeFixed(cols[4]),
+                    reason: String(cols[5] || "").trim().normalize('NFC')
                 }));
                 resolve(parsed);
             } catch (err) { reject(err); }
@@ -166,22 +171,53 @@ function parseXLSX(file) {
 function optimizeSeating(studentList, preAssigned = []) {
     let seats = preAssigned.length > 0 ? [...preAssigned] : new Array(TOTAL_SEATS).fill(null);
 
-    // Filter students already manually placed
+    // --- Hard-lock: fixed seat positions ---
+    // fixed='3' → r=1,c=1 (맨 뒤에서 왼쪽 2번째)
+    const fixed3Student = studentList.find(s => s.fixed.trim() === '3');
+    if (fixed3Student) {
+        const seatIdx = activeSeats.findIndex(s => s.r === 1 && s.c === 1);
+        if (seatIdx !== -1) seats[seatIdx] = fixed3Student;
+    }
+    // fixed='2' → r=1,c=0 (3번 자리 왼쪽)
+    const fixed2Student = studentList.find(s => s.fixed.trim() === '2');
+    if (fixed2Student) {
+        const seatIdx = activeSeats.findIndex(s => s.r === 1 && s.c === 0);
+        if (seatIdx !== -1) seats[seatIdx] = fixed2Student;
+    }
+
+    // Build the locked array so SA never swaps these seats
+    const lockedSeats = [...seats];
+
+    // Filter students already placed (including the hard-locked ones)
     const assignedIds = new Set(seats.filter(Boolean).map(s => s.id));
     const unassignedStudents = studentList.filter(s => !assignedIds.has(s.id));
 
     // Fill remaining seats greedily based on fixed constraints
     seats = fillGreedyInitialAssignment(seats, unassignedStudents);
 
-    // Simulated Annealing Optimization
-    return runSimulatedAnnealing(seats, preAssigned);
+    // Simulated Annealing Optimization (lockedSeats keeps hard-locked positions)
+    return runSimulatedAnnealing(seats, lockedSeats);
 }
 
 function fillGreedyInitialAssignment(seats, unassigned) {
+    let remainingUnassigned = [...unassigned];
+    // fixed='3' → r=1,c=1
+    const idx3 = activeSeats.findIndex(s => s.r === 1 && s.c === 1);
+    if (idx3 !== -1 && seats[idx3] === null) {
+        const i = remainingUnassigned.findIndex(s => s.fixed.trim() === '3');
+        if (i !== -1) { seats[idx3] = remainingUnassigned[i]; remainingUnassigned.splice(i, 1); }
+    }
+    // fixed='2' → r=1,c=0 (3번 자리 왼쪽)
+    const idx2 = activeSeats.findIndex(s => s.r === 1 && s.c === 0);
+    if (idx2 !== -1 && seats[idx2] === null) {
+        const i = remainingUnassigned.findIndex(s => s.fixed.trim() === '2');
+        if (i !== -1) { seats[idx2] = remainingUnassigned[i]; remainingUnassigned.splice(i, 1); }
+    }
+
     const groups = { front: [], back: [], normal: [] };
     
     // Instead of forcing lock, we still try to prioritize them into correct bins.
-    unassigned.forEach(s => {
+    remainingUnassigned.forEach(s => {
         if (s.fixed.includes('앞')) groups.front.push(s);
         else if (s.fixed.includes('뒤') || s.fixed.includes('뒷')) groups.back.push(s);
         else groups.normal.push(s);
@@ -276,6 +312,12 @@ function calculateScore(seats) {
         }
         if ((student.fixed.includes('뒤') || student.fixed.includes('뒷')) && seat.r > 1) {
             score -= 2000;
+        }
+        if (student.fixed.trim() === '3' && !(seat.r === 1 && seat.c === 1)) {
+            score -= 100000;
+        }
+        if (student.fixed.trim() === '2' && !(seat.r === 1 && seat.c === 0)) {
+            score -= 100000;
         }
 
         // Like Score
