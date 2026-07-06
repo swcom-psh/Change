@@ -534,30 +534,175 @@ button:disabled {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        gap: 15px;
+    }
+
+    /* Scale down header and adjust padding */
+    .main-header {
+        padding: 20px 15px;
+    }
+
+    .main-header h1 {
+        font-size: 1.8rem;
+        word-break: keep-all;
+    }
+
+    .main-header::before,
+    .main-header::after {
+        font-size: 1.8rem;
+        top: 50%;
+    }
+    
+    .main-header::before {
+        left: 15px;
+    }
+    
+    .main-header::after {
+        right: 15px;
+    }
+
     .controls {
         grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .control-card {
+        padding: 15px;
+        gap: 10px;
+    }
+
+    /* Stack buttons vertically on mobile for easier tapping */
+    .button-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    button {
+        padding: 12px;
+        font-size: 1rem;
+        width: 100%;
     }
 
     .main-body {
         flex-direction: column;
+        gap: 15px;
     }
 
     .sidebar {
         width: 100%;
+        min-width: 100%;
         position: static;
-        max-height: 350px;
+        max-height: 300px;
+        padding: 15px;
+    }
+
+    .unassigned-list {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .unassigned-student {
+        padding: 8px 10px;
+        font-size: 0.95rem;
+    }
+
+    .unassigned-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+
+    .classroom {
+        padding: 15px 10px;
+        gap: 20px;
+        width: 100%;
+    }
+
+    .teacher-desk {
+        width: 160px;
+        height: 45px;
+        font-size: 1.1rem;
+        letter-spacing: 2px;
     }
 
     .seating-grid {
-        gap: 12px;
+        gap: 8px;
     }
 
     .seat {
-        padding: 8px;
+        padding: 6px;
+        border-radius: 10px;
+        aspect-ratio: auto; /* Remove aspect-ratio to prevent pill stretching */
+        min-height: 75px;
+    }
+
+    .seat-number {
+        top: 4px;
+        left: 6px;
+        font-size: 0.7rem;
+    }
+
+    .student-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+        margin-bottom: 4px;
     }
 
     .student-name {
-        font-size: 1.1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Extra small screens (less than 480px) */
+@media (max-width: 480px) {
+    .main-header {
+        padding: 15px 10px;
+    }
+
+    .main-header h1 {
+        font-size: 1.4rem;
+    }
+
+    /* Hide background emoji decorations if too narrow */
+    .main-header::before,
+    .main-header::after {
+        display: none;
+    }
+
+    .seating-grid {
+        gap: 4px;
+    }
+
+    .seat {
+        padding: 4px 2px;
+        border-radius: 8px;
+        min-height: 60px;
+    }
+
+    /* Transform circular avatar into a tiny, text-only number label on very small screens to fit names */
+    .student-avatar {
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        background-color: transparent !important;
+        box-shadow: none;
+        margin-bottom: 2px;
+        font-size: 0.75rem;
+        color: hsl(210, 16%, 50%) !important;
+    }
+
+    .seat:hover .student-avatar {
+        transform: none;
+    }
+
+    .student-name {
+        font-size: 0.8rem;
     }
 }
 
@@ -584,4 +729,4 @@ button:disabled {
     width: 100%;
     height: 40px;
     transform: scaleY(-1); /* flip the wave downwards */
-}
+}
