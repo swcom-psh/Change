@@ -568,10 +568,38 @@ function handleDownload() {
     ELEMENTS.classroom.style.position = 'relative';
     ELEMENTS.classroom.appendChild(stamp);
 
-    html2canvas(ELEMENTS.classroom, { backgroundColor: "#ffffff", scale: 2, useCORS: true }).then(canvas => {
+    html2canvas(ELEMENTS.classroom, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        // html2canvas는 backdrop-filter(글래스 블러)를 지원하지 않아 반투명 배경이
+        // 흐릿하게 뽑힌다. 캡처용 복제본에서만 블러를 없애고 배경을 불투명으로 강제한다.
+        onclone: (clonedDoc) => {
+            const clonedClassroom = clonedDoc.querySelector('.classroom');
+            if (clonedClassroom) {
+                clonedClassroom.style.backdropFilter = 'none';
+                clonedClassroom.style.webkitBackdropFilter = 'none';
+                clonedClassroom.style.background = '#ffffff';
+            }
+            // 인쇄 대비 보정: 화면에선 옅은 테두리/글자가 예쁘지만 프린터에선
+            // 날아가 흐리게 나온다. 저장본에서만 좌석을 불투명 흰색 + 진한 테두리로,
+            // 번호는 진한 회색으로 강제해 또렷하게 인쇄되도록 한다.
+            clonedDoc.querySelectorAll('.seat').forEach(seat => {
+                seat.style.background = '#ffffff';
+                seat.style.border = '2px solid #6b7785';
+                seat.style.boxShadow = 'none';
+            });
+            clonedDoc.querySelectorAll('.seat-number').forEach(num => {
+                num.style.color = '#333333';
+            });
+            // 교탁 테두리(점선)도 진하게
+            const clonedDesk = clonedDoc.querySelector('.teacher-desk');
+            if (clonedDesk) clonedDesk.style.border = '2px solid #4a6a80';
+        }
+    }).then(canvas => {
         const link = document.createElement('a');
         link.download = `자리배치도_${dateStr}.png`;
-        link.href = canvas.toDataURL();
+        link.href = canvas.toDataURL("image/png");
         link.click();
         stamp.remove();
     });
