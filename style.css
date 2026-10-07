@@ -735,3 +735,125 @@ button:disabled {
     height: 40px;
     transform: scaleY(-1); /* flip the wave downwards */
 }
+
+/* ==========================================
+   Desktop: 한 화면에 다 보이도록 높이를 맞춘다
+   (모바일은 위의 미디어쿼리 레이아웃을 그대로 사용)
+   ========================================== */
+@media (min-width: 769px) {
+    body {
+        height: 100vh;
+        padding: 10px;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+
+    .container {
+        height: 100%;
+        min-height: 560px;
+        gap: 10px;
+    }
+
+    .wave-container {
+        display: none;
+    }
+
+    .main-header {
+        padding: 8px 20px;
+        margin-bottom: 0;
+    }
+
+    .main-header h1 {
+        font-size: 1.7rem;
+    }
+
+    .main-header::before,
+    .main-header::after {
+        font-size: 1.8rem;
+    }
+
+    .controls {
+        gap: 10px;
+    }
+
+    .control-card {
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 18px;
+    }
+
+    .control-card h2 {
+        font-size: 1.05rem;
+        white-space: nowrap;
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+
+    .control-card input[type="file"] {
+        flex: 1;
+        min-width: 0;
+        padding: 6px 10px;
+        font-size: 0.9rem;
+    }
+
+    .control-card .help-text {
+        display: none;
+    }
+
+    .control-card button {
+        padding: 9px 14px;
+        font-size: 0.95rem;
+    }
+
+    .control-card .btn-small {
+        flex: 0 0 auto;
+        margin-top: 0;
+        white-space: nowrap;
+    }
+
+    .control-card .button-group {
+        flex: 1;
+    }
+
+    .main-body {
+        flex: 1;
+        min-height: 0;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .sidebar {
+        width: 220px;
+        min-width: 220px;
+        padding: 14px;
+        gap: 10px;
+        position: static;
+        max-height: none;
+    }
+
+    .classroom {
+        padding: 14px 20px;
+        gap: 12px;
+        min-height: 0;
+    }
+
+    .seating-grid {
+        flex: 1;
+        min-height: 0;
+        gap: 10px;
+        grid-auto-rows: minmax(0, 1fr);
+    }
+
+    .seat {
+        aspect-ratio: auto;
+        min-height: 0;
+        padding: 6px;
+    }
+
+    .teacher-desk {
+        height: 44px;
+        font-size: 1.15rem;
+    }
+}
