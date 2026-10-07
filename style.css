@@ -844,9 +844,12 @@ button:disabled {
         min-height: 0;
         gap: 10px;
         grid-auto-rows: minmax(0, 1fr);
+        /* 아주 넓은 화면에서 좌석이 납작해지지 않도록 높이 기준으로 폭을 제한 */
+        max-width: calc((100vh - 200px) * 1.9);
     }
 
-    .seat {
+    .seat,
+    .seat-edit-cell {
         aspect-ratio: auto;
         min-height: 0;
         padding: 6px;

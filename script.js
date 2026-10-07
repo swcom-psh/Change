@@ -629,25 +629,64 @@ function handleDownload() {
         // 흐릿하게 뽑힌다. 캡처용 복제본에서만 블러를 없애고 배경을 불투명으로 강제한다.
         onclone: (clonedDoc) => {
             const clonedClassroom = clonedDoc.querySelector('.classroom');
+            // 화면은 창 크기에 맞춰 늘어나지만, 저장본은 어떤 화면에서 눌러도 같은
+            // 컴팩트한 크기로 나오도록 고정 레이아웃으로 되돌린다.
+            // 화면 높이에 묶인 상위 레이아웃(100vh)을 풀어, 내용 높이만큼만 캡처되게 한다.
+            [clonedDoc.body, clonedDoc.querySelector('.container'), clonedDoc.querySelector('.main-body')].forEach(el => {
+                if (el) Object.assign(el.style, { height: 'auto', minHeight: '0', overflow: 'visible', flex: 'none' });
+            });
+            if (clonedClassroom) {
+                Object.assign(clonedClassroom.style, {
+                    alignSelf: 'flex-start',
+                    flex: 'none', width: '760px', height: 'auto', minHeight: '0',
+                    padding: '30px 40px 48px', gap: '30px'
+                });
+            }
+            const clonedGrid = clonedDoc.querySelector('.seating-grid');
+            if (clonedGrid) {
+                Object.assign(clonedGrid.style, {
+                    flex: 'none', height: 'auto', gap: '14px', gridAutoRows: 'auto'
+                });
+            }
+            clonedDoc.querySelectorAll('.seat').forEach(seat => {
+                Object.assign(seat.style, { aspectRatio: '11 / 10', minHeight: '0', padding: '10px' });
+            });
+            clonedDoc.querySelectorAll('.student-avatar').forEach(av => {
+                Object.assign(av.style, { flex: 'none', width: '38px', height: '38px', marginBottom: '6px', transform: 'none', transition: 'none' });
+            });
+            clonedDoc.querySelectorAll('.seat').forEach(seat => { seat.style.transition = 'none'; seat.style.transform = 'none'; });
+            clonedDoc.querySelectorAll('.seat-number').forEach(num => { num.style.display = 'none'; });
+            const clonedTeacherDesk = clonedDoc.querySelector('.teacher-desk');
+            if (clonedTeacherDesk) Object.assign(clonedTeacherDesk.style, { height: '60px', fontSize: '1.4rem' });
+            // 파스텔 톤 저장본: 배경은 은은한 그라데이션, 좌석은 학생 번호 색을 옅게 깐 카드로.
+            // (화면용 반투명/블러는 html2canvas가 못 그리므로 전부 불투명 색으로 강제한다)
             if (clonedClassroom) {
                 clonedClassroom.style.backdropFilter = 'none';
                 clonedClassroom.style.webkitBackdropFilter = 'none';
-                clonedClassroom.style.background = '#ffffff';
+                clonedClassroom.style.background = 'linear-gradient(135deg, #fff4f8 0%, #f3f1ff 50%, #ecf9f4 100%)';
             }
-            // 인쇄 대비 보정: 화면에선 옅은 테두리/글자가 예쁘지만 프린터에선
-            // 날아가 흐리게 나온다. 저장본에서만 좌석을 불투명 흰색 + 진한 테두리로,
-            // 번호는 진한 회색으로 강제해 또렷하게 인쇄되도록 한다.
+            const toRgba = (rgb, alpha) => rgb.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
             clonedDoc.querySelectorAll('.seat').forEach(seat => {
-                seat.style.background = '#ffffff';
-                seat.style.border = '2px solid #6b7785';
+                const avatar = seat.querySelector('.student-avatar');
+                const hasStudent = avatar && avatar.style.opacity === '1' && avatar.style.backgroundColor;
+                const tint = hasStudent ? avatar.style.backgroundColor : 'rgb(214, 208, 234)';
+                seat.style.background = `linear-gradient(160deg, #ffffff 0%, ${toRgba(tint, hasStudent ? 0.38 : 0.18)} 100%)`;
+                seat.style.border = `2px solid ${toRgba(tint, 0.95)}`;
                 seat.style.boxShadow = 'none';
             });
-            clonedDoc.querySelectorAll('.seat-number').forEach(num => {
-                num.style.color = '#333333';
-            });
-            // 교탁 테두리(점선)도 진하게
+            // 교탁: 파란 점선 장식(::before)은 스타일로 못 지우므로, 장식 없는 요소로 교체해 파스텔 톤으로
             const clonedDesk = clonedDoc.querySelector('.teacher-desk');
-            if (clonedDesk) clonedDesk.style.border = '2px solid #4a6a80';
+            if (clonedDesk) {
+                const plainDesk = clonedDoc.createElement('div');
+                plainDesk.textContent = clonedDesk.textContent;
+                Object.assign(plainDesk.style, {
+                    width: '220px', height: '60px', boxSizing: 'border-box',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: '#ffffff', border: '2px solid #cfc3ee', borderRadius: '12px',
+                    color: '#7a62b8', fontSize: '1.4rem', fontWeight: '800', letterSpacing: '4px'
+                });
+                clonedDesk.replaceWith(plainDesk);
+            }
         }
     }).then(canvas => {
         const link = document.createElement('a');
