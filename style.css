@@ -8,8 +8,8 @@
     --desk-bg: #e8dfcf;
     --ink: #3b3631;
     --ink-soft: #7a7166;
-    --ink-faint: #b3a68e;
-    --line-dash: #c8bba3;
+    --ink-faint: #94866c;
+    --line-dash: #a8987b;
     --highlight: #fff3a8;
     --note-default: #fff3a8;
     --font-hand: 'Gaegu', 'Gowun Dodum', cursive;
@@ -322,6 +322,7 @@ h1, h2, h3, p {
     container-type: inline-size;
     border: 2px dashed var(--line-dash);
     border-radius: 4px;
+    background: rgba(255, 255, 255, 0.78); /* 모눈 줄과 겹쳐 흐려 보이지 않게 */
     transition: transform 0.18s, box-shadow 0.18s, opacity 0.2s, filter 0.2s;
 }
 
@@ -348,7 +349,8 @@ h1, h2, h3, p {
 
 .seat:not(.filled)::before {
     content: '빈자리';
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--ink-faint);
 }
 
@@ -377,7 +379,7 @@ h1, h2, h3, p {
     font-size: 14px;
     line-height: 1;
     color: var(--ink);
-    opacity: 0.45;
+    opacity: 0.6;
 }
 
 .student-name {
