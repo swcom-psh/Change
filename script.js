@@ -658,12 +658,12 @@ function handleDownload() {
             clonedDoc.querySelectorAll('.seat-number').forEach(num => { num.style.display = 'none'; });
             const clonedTeacherDesk = clonedDoc.querySelector('.teacher-desk');
             if (clonedTeacherDesk) Object.assign(clonedTeacherDesk.style, { height: '60px', fontSize: '1.4rem' });
-            // 파스텔 톤 저장본: 배경은 은은한 그라데이션, 좌석은 학생 번호 색을 옅게 깐 카드로.
+            // 파스텔 톤 저장본: 배경은 흰색, 좌석은 학생 번호 색을 옅게 깐 카드로.
             // (화면용 반투명/블러는 html2canvas가 못 그리므로 전부 불투명 색으로 강제한다)
             if (clonedClassroom) {
                 clonedClassroom.style.backdropFilter = 'none';
                 clonedClassroom.style.webkitBackdropFilter = 'none';
-                clonedClassroom.style.background = 'linear-gradient(135deg, #fff4f8 0%, #f3f1ff 50%, #ecf9f4 100%)';
+                clonedClassroom.style.background = '#ffffff';
             }
             const toRgba = (rgb, alpha) => rgb.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
             clonedDoc.querySelectorAll('.seat').forEach(seat => {
