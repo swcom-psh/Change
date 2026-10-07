@@ -14,10 +14,8 @@ const CONFIG = {
         TEMP_FINAL: 0.1,
         DISLIKE_SAFE_DIST: 3 // 기피 학생과 이 거리(칸) 이상 떨어지면 벌점 없음
     },
-    COLORS: [
-        '#b3e5fc', '#80deea', '#e0f2f1', '#e8f5e9', '#fff9c4', '#ffe0b2', '#ffccbc', '#d1c4e9',
-        '#81d4fa', '#4dd0e1', '#b2dfdb', '#c8e6c9', '#fff59d', '#ffb74d', '#ffab91', '#b39ddb'
-    ]
+    // 포스트잇 색 (학생 번호 순서대로 돌아가며 쓴다)
+    COLORS: ['#fff3a8', '#ffd6de', '#cfe8ff', '#d6f2d0', '#ffe1c2', '#e6dcff']
 };
 
 // Fisher-Yates. sort(() => Math.random() - 0.5)는 치우쳐서 제대로 안 섞인다.
@@ -53,8 +51,13 @@ const ELEMENTS = {
     seatingGrid: document.getElementById('seatingGrid'),
     classroom: document.querySelector('.classroom'),
     unassignedList: document.getElementById('unassignedList'),
-    classroomObjects: document.getElementById('classroomObjects')
+    fileLabel: document.getElementById('fileLabel'),
+    waitingCount: document.getElementById('waitingCount'),
+    roomDate: document.getElementById('roomDate')
 };
+
+const GENERATE_LABEL = ELEMENTS.generateBtn.textContent;
+const EDIT_LABEL = { off: ELEMENTS.editBtn.textContent, on: '고치기 끝 ✔' };
 
 /* ==========================================
    4. Initialization & Layout
@@ -413,8 +416,9 @@ function calculateScore(seats) {
 async function renderSeating(seats, isSilent = false, prevAssignment = []) {
     if (isEditMode) {
         isEditMode = false;
-        ELEMENTS.editBtn.textContent = "자리 구조 수정";
+        ELEMENTS.editBtn.textContent = EDIT_LABEL.off;
         ELEMENTS.editBtn.classList.remove('btn-active');
+        ELEMENTS.classroom.classList.remove('is-editing');
     }
     ELEMENTS.seatingGrid.innerHTML = '';
     ELEMENTS.seatingGrid.style.setProperty('--grid-cols', CONFIG.GRID.COLS);
@@ -448,7 +452,7 @@ async function renderSeating(seats, isSilent = false, prevAssignment = []) {
 
     // Animation Loop
     ELEMENTS.generateBtn.disabled = true;
-    ELEMENTS.generateBtn.textContent = "발표 중...";
+    ELEMENTS.generateBtn.textContent = "발표 중... 🥁";
     ELEMENTS.classroom.classList.add('is-announcing');
 
     for (let i = 0; i < TOTAL_SEATS; i++) {
@@ -463,11 +467,16 @@ async function renderSeating(seats, isSilent = false, prevAssignment = []) {
 
     ELEMENTS.classroom.classList.remove('is-announcing');
     ELEMENTS.generateBtn.disabled = false;
-    ELEMENTS.generateBtn.textContent = "자리 배치하기";
+    ELEMENTS.generateBtn.textContent = GENERATE_LABEL;
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     
     // Enable dragging
     ELEMENTS.seatingGrid.querySelectorAll('.seat').forEach(s => s.draggable = true);
+}
+
+// 포스트잇이 살짝씩 다르게 기울어지도록, 자리 위치로 정해지는 각도(-1.8 ~ 1.8도)
+function seatTilt(key) {
+    return (((key * 37) % 7) - 3) * 0.6;
 }
 
 function createSeatElement(seat, i, maxRow) {
@@ -476,15 +485,13 @@ function createSeatElement(seat, i, maxRow) {
     div.setAttribute('data-index', i);
     div.style.gridRow = seat.r + 1;
     div.style.gridColumn = seat.c + 1;
+    div.style.setProperty('--tilt', `${seatTilt(seat.idx)}deg`);
 
     div.innerHTML = `
         <div class="seat-number"></div>
-        <div class="student-avatar" style="opacity: 0"></div>
+        <div class="student-avatar"></div>
         <div class="student-name"></div>
     `;
-
-    if (seat.r >= maxRow - 1) div.classList.add('zone-front');
-    if (seat.r <= 1) div.classList.add('zone-back');
 
     div.addEventListener('click', handleSeatClick);
     div.addEventListener('dragstart', handleDragStart);
@@ -497,20 +504,19 @@ function createSeatElement(seat, i, maxRow) {
 }
 
 function updateSeatContent(el, s) {
+    el.nameDiv.style.color = "";   // 룰렛이 칠한 회색을 지운다
     if (!s) {
         el.nameDiv.innerText = "";
-        el.avatarDiv.style.opacity = '0';
+        el.avatarDiv.innerText = "";
+        el.div.classList.remove('filled');
+        el.div.style.removeProperty('--note');
         el.div.title = "";
         return;
     }
     el.nameDiv.innerText = s.name;
-    el.nameDiv.style.color = "#000";
-    el.nameDiv.style.fontWeight = "bold";
-
-    const avatar = getStudentAvatar(s.displayNum, s.name);
     el.avatarDiv.innerText = s.displayNum;
-    el.avatarDiv.style.backgroundColor = avatar.color;
-    el.avatarDiv.style.opacity = '1';
+    el.div.classList.add('filled');
+    el.div.style.setProperty('--note', getStudentAvatar(s.displayNum, s.name).color);
 
     let tooltip = `번호: ${s.displayNum}\n`;
     if (s.likes.length) tooltip += `선호: ${s.likes.join(', ')}\n`;
@@ -538,24 +544,26 @@ function renderUnassignedList() {
     const assignedIds = new Set(currentAssignment.filter(Boolean).map(s => s.id));
     const unassigned = students.filter(s => !assignedIds.has(s.id));
 
+    ELEMENTS.waitingCount.textContent = students.length ? `(${unassigned.length})` : '';
     if (students.length === 0) {
-        ELEMENTS.unassignedList.innerHTML = '<div class="empty-list-msg">파일을 업로드하면<br>명단이 표시됩니다.</div>';
+        ELEMENTS.unassignedList.innerHTML = '<div class="empty-list-msg">파일을 올리면<br>명단이 여기에 붙어요.</div>';
         return;
     }
     if (unassigned.length === 0) {
-        ELEMENTS.unassignedList.innerHTML = '<div class="empty-list-msg">모든 학생이<br>배치되었습니다.</div>';
+        ELEMENTS.unassignedList.innerHTML = '<div class="empty-list-msg">모두 자리를 찾았어요! 🎉</div>';
         return;
     }
 
     ELEMENTS.unassignedList.innerHTML = '';
-    unassigned.forEach(s => {
+    unassigned.forEach((s, i) => {
         const div = document.createElement('div');
         div.className = 'unassigned-student';
         div.draggable = true;
         div.setAttribute('data-id', s.id);
-        const avatar = getStudentAvatar(s.displayNum, s.name);
+        div.style.setProperty('--note', getStudentAvatar(s.displayNum, s.name).color);
+        div.style.setProperty('--tilt', `${seatTilt(i + 3) * 0.6}deg`);
         div.innerHTML = `
-            <div class="unassigned-avatar" style="background-color: ${avatar.color}">${s.displayNum}</div>
+            <div class="unassigned-avatar">${s.displayNum}</div>
             <div class="unassigned-name">${s.name}</div>
         `;
         div.addEventListener('dragstart', handleSidebarDragStart);
@@ -587,6 +595,8 @@ async function handleFileLoad() {
         currentAssignment = new Array(TOTAL_SEATS).fill(null);
         renderUnassignedList();
         renderSeating(currentAssignment, true);
+        ELEMENTS.fileLabel.textContent = file.name;
+        ELEMENTS.fileLabel.parentElement.title = file.name;
     } catch (err) {
         alert("파일 읽기 오류: " + err.message);
     }
@@ -605,95 +615,51 @@ async function handleGenerate() {
 }
 
 function handleDownload() {
+    if (isEditMode) {
+        alert("자리 구조 고치기를 먼저 끝내 주세요.");
+        return;
+    }
     if (!ELEMENTS.seatingGrid.children.length || ELEMENTS.seatingGrid.querySelector('.empty-state')) {
         alert("저장할 배치도가 없습니다.");
         return;
     }
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
-    // Temp stamp
-    const stamp = document.createElement('div');
-    stamp.innerText = dateStr;
-    stamp.className = 'temp-date-stamp';
-    stamp.style = "position:absolute; bottom:10px; left:50%; transform:translateX(-50%); font-size:1.2rem; color:#666; font-family:'Do Hyeon';";
-    
-    ELEMENTS.classroom.style.position = 'relative';
-    ELEMENTS.classroom.appendChild(stamp);
+    // 저장본 머리글의 날짜는 저장하는 날 기준으로
+    ELEMENTS.roomDate.textContent = formatRoomDate(now);
 
     html2canvas(ELEMENTS.classroom, {
         backgroundColor: "#ffffff",
         scale: 2,
         useCORS: true,
-        // html2canvas는 backdrop-filter(글래스 블러)를 지원하지 않아 반투명 배경이
-        // 흐릿하게 뽑힌다. 캡처용 복제본에서만 블러를 없애고 배경을 불투명으로 강제한다.
         onclone: (clonedDoc) => {
-            const clonedClassroom = clonedDoc.querySelector('.classroom');
             // 화면은 창 크기에 맞춰 늘어나지만, 저장본은 어떤 화면에서 눌러도 같은
-            // 컴팩트한 크기로 나오도록 고정 레이아웃으로 되돌린다.
-            // 화면 높이에 묶인 상위 레이아웃(100vh)을 풀어, 내용 높이만큼만 캡처되게 한다.
-            [clonedDoc.body, clonedDoc.querySelector('.container'), clonedDoc.querySelector('.main-body')].forEach(el => {
+            // 크기로 나오도록 고정 레이아웃으로 되돌린다. (100vh에 묶인 상위 높이도 푼다)
+            [clonedDoc.body, clonedDoc.querySelector('.container'), clonedDoc.querySelector('.main-sheet')].forEach(el => {
                 if (el) Object.assign(el.style, { height: 'auto', minHeight: '0', overflow: 'visible', flex: 'none' });
             });
-            if (clonedClassroom) {
-                Object.assign(clonedClassroom.style, {
-                    alignSelf: 'flex-start',
-                    flex: 'none', width: '760px', height: 'auto', minHeight: '0',
-                    padding: '30px 40px 48px', gap: '30px'
-                });
-            }
+            const clonedClassroom = clonedDoc.querySelector('.classroom');
+            Object.assign(clonedClassroom.style, {
+                flex: 'none', width: '900px', height: 'auto',
+                padding: '34px 44px 36px', gap: '22px',
+                background: '#ffffff'   // 모눈 없이 흰 바탕
+            });
             const clonedGrid = clonedDoc.querySelector('.seating-grid');
-            if (clonedGrid) {
-                Object.assign(clonedGrid.style, {
-                    flex: 'none', height: 'auto', gap: '14px', gridAutoRows: 'auto'
-                });
-            }
+            Object.assign(clonedGrid.style, {
+                flex: 'none', maxWidth: 'none', gap: '18px 18px', gridAutoRows: '96px', padding: '10px 4px 4px'
+            });
             clonedDoc.querySelectorAll('.seat').forEach(seat => {
-                Object.assign(seat.style, { aspectRatio: '11 / 10', minHeight: '0', padding: '10px' });
+                seat.style.transition = 'none';
+                seat.classList.remove('spotlight', 'drag-over', 'dragging');
             });
-            clonedDoc.querySelectorAll('.student-avatar').forEach(av => {
-                Object.assign(av.style, { flex: 'none', width: '38px', height: '38px', marginBottom: '6px', transform: 'none', transition: 'none' });
-            });
-            clonedDoc.querySelectorAll('.seat').forEach(seat => { seat.style.transition = 'none'; seat.style.transform = 'none'; });
+            // 자리 번호는 화면 조작용이라 저장본에서는 뺀다
             clonedDoc.querySelectorAll('.seat-number').forEach(num => { num.style.display = 'none'; });
-            const clonedTeacherDesk = clonedDoc.querySelector('.teacher-desk');
-            if (clonedTeacherDesk) Object.assign(clonedTeacherDesk.style, { height: '60px', fontSize: '1.4rem' });
-            // 파스텔 톤 저장본: 배경은 흰색, 좌석은 학생 번호 색을 옅게 깐 카드로.
-            // (화면용 반투명/블러는 html2canvas가 못 그리므로 전부 불투명 색으로 강제한다)
-            if (clonedClassroom) {
-                clonedClassroom.style.backdropFilter = 'none';
-                clonedClassroom.style.webkitBackdropFilter = 'none';
-                clonedClassroom.style.background = '#ffffff';
-            }
-            const toRgba = (rgb, alpha) => rgb.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
-            clonedDoc.querySelectorAll('.seat').forEach(seat => {
-                const avatar = seat.querySelector('.student-avatar');
-                const hasStudent = avatar && avatar.style.opacity === '1' && avatar.style.backgroundColor;
-                const tint = hasStudent ? avatar.style.backgroundColor : 'rgb(214, 208, 234)';
-                seat.style.background = `linear-gradient(160deg, #ffffff 0%, ${toRgba(tint, hasStudent ? 0.38 : 0.18)} 100%)`;
-                seat.style.border = `2px solid ${toRgba(tint, 0.95)}`;
-                seat.style.boxShadow = 'none';
-            });
-            // 교탁: 파란 점선 장식(::before)은 스타일로 못 지우므로, 장식 없는 요소로 교체해 파스텔 톤으로
-            const clonedDesk = clonedDoc.querySelector('.teacher-desk');
-            if (clonedDesk) {
-                const plainDesk = clonedDoc.createElement('div');
-                plainDesk.textContent = clonedDesk.textContent;
-                Object.assign(plainDesk.style, {
-                    width: '220px', height: '60px', boxSizing: 'border-box',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: '#ffffff', border: '2px solid #cfc3ee', borderRadius: '12px',
-                    color: '#7a62b8', fontSize: '1.4rem', fontWeight: '800', letterSpacing: '4px'
-                });
-                clonedDesk.replaceWith(plainDesk);
-            }
         }
     }).then(canvas => {
         const link = document.createElement('a');
         link.download = `자리배치도_${dateStr}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
-        stamp.remove();
     });
 }
 
@@ -702,8 +668,9 @@ function handleDownload() {
    ========================================== */
 function toggleEditMode() {
     isEditMode = !isEditMode;
-    ELEMENTS.editBtn.textContent = isEditMode ? "수정 완료" : "자리 구조 수정";
+    ELEMENTS.editBtn.textContent = isEditMode ? EDIT_LABEL.on : EDIT_LABEL.off;
     ELEMENTS.editBtn.classList.toggle('btn-active', isEditMode);
+    ELEMENTS.classroom.classList.toggle('is-editing', isEditMode);
     
     if (isEditMode) {
         renderEditGrid();
@@ -808,8 +775,15 @@ ELEMENTS.editBtn.addEventListener('click', toggleEditMode);
 ELEMENTS.templateBtn.addEventListener('click', downloadTemplate);
 
 if (ELEMENTS.unassignedList) {
-    ELEMENTS.unassignedList.addEventListener('dragover', e => e.preventDefault());
+    ELEMENTS.unassignedList.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (draggedSeatIndex !== null) ELEMENTS.unassignedList.classList.add('drag-over');
+    });
+    ELEMENTS.unassignedList.addEventListener('dragleave', e => {
+        if (!ELEMENTS.unassignedList.contains(e.relatedTarget)) ELEMENTS.unassignedList.classList.remove('drag-over');
+    });
     ELEMENTS.unassignedList.addEventListener('drop', e => {
+        ELEMENTS.unassignedList.classList.remove('drag-over');
         if (draggedSeatIndex !== null) {
             currentAssignment[draggedSeatIndex] = null;
             updateSingleSeatDOM(draggedSeatIndex);
@@ -817,6 +791,12 @@ if (ELEMENTS.unassignedList) {
         }
     });
 }
+
+function formatRoomDate(d) {
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')} (${days[d.getDay()]})`;
+}
+ELEMENTS.roomDate.textContent = formatRoomDate(new Date());
 
 // 기본 명단 없이 빈 교실로 시작한다. 명단은 파일 업로드로만 불러온다.
 function initEmptyClassroom() {
@@ -827,71 +807,3 @@ function initEmptyClassroom() {
 }
 
 initEmptyClassroom();
-
-/* ==========================================
-   11. Initialize ParticlesJS (Summer Bubble Background)
-   ========================================== */
-if (window.particlesJS) {
-    particlesJS('particles-js', {
-        "particles": {
-            "number": {
-                "value": 40,
-                "density": {
-                    "enable": true,
-                    "value_area": 800
-                }
-            },
-            "color": {
-                "value": "#ffffff"
-            },
-            "shape": {
-                "type": "circle"
-            },
-            "opacity": {
-                "value": 0.4,
-                "random": true,
-                "anim": {
-                    "enable": true,
-                    "speed": 0.5,
-                    "opacity_min": 0.1,
-                    "sync": false
-                }
-            },
-            "size": {
-                "value": 8,
-                "random": true,
-                "anim": {
-                    "enable": true,
-                    "speed": 1.2,
-                    "size_min": 2,
-                    "sync": false
-                }
-            },
-            "line_linked": {
-                "enable": false
-            },
-            "move": {
-                "enable": true,
-                "speed": 1.5,
-                "direction": "top",
-                "random": true,
-                "straight": false,
-                "out_mode": "out",
-                "bounce": false
-            }
-        },
-        "interactivity": {
-            "detect_on": "canvas",
-            "events": {
-                "onhover": {
-                    "enable": false
-                },
-                "onclick": {
-                    "enable": false
-                },
-                "resize": true
-            }
-        },
-        "retina_detect": true
-    });
-}

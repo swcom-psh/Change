@@ -4,71 +4,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌊 강원사대부고 자리 바꾸기 프로그램 🌴</title>
+    <title>강원사대부고 자리바꾸기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Fonts for Summer Glassmorphism vibe -->
-    <link rel="stylesheet" as="style" crossorigin
-        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 </head>
 
 <body>
-    <!-- Floating Water Bubble Particles Background -->
-    <div id="particles-js"></div>
-
     <div class="container">
-        <header class="main-header glass">
-            <h1> 강원 사대부고 자리바꾸기</h1>
-        </header>
+        <aside class="sheet side-sheet">
+            <div class="tape tape-blue"></div>
+            <h2 class="side-title">✏️ 오늘의 자리</h2>
 
-        <div class="wave-container">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" class="wave-svg" preserveAspectRatio="none">
-                <path fill="rgba(255,255,255,0.25)"
-                    d="M0,32L80,48C160,64,320,96,480,96C640,96,800,64,960,48C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z">
-                </path>
-            </svg>
-        </div>
-
-        <section class="controls">
-            <div class="control-card glass">
-                <h2>1. 데이터 업로드</h2>
+            <section class="step-card">
+                <h3 class="step-title">① 명단 붙이기</h3>
+                <label class="btn file-btn" for="csvInput">
+                    📎 <span id="fileLabel">파일 선택</span>
+                </label>
                 <input type="file" id="csvInput" accept=".csv, .xlsx, .xls">
-                <p class="help-text">CSV 또는 엑셀(.xlsx) 파일을 선택해주세요.</p>
-                <button id="templateBtn" class="btn-secondary btn-small" type="button">📥 엑셀 양식 다운로드</button>
-            </div>
-            <div class="control-card glass">
-                <h2>2. 배치 실행</h2>
-                <div class="button-group">
-                    <button id="generateBtn" class="btn-primary">자리 배치하기</button>
-                    <button id="editBtn" class="btn-info">자리 구조 수정</button>
-                    <button id="downloadBtn" class="btn-secondary">이미지 저장</button>
-                </div>
-            </div>
-        </section>
+                <button id="templateBtn" class="btn btn-small" type="button">엑셀 양식 받기</button>
+            </section>
 
-        <div class="main-body">
-            <aside class="sidebar glass" id="sidebar">
-                <h2>대기 명단</h2>
-                <div class="sidebar-help">명단을 드래그하여 자리에<br>배치하거나 뺄 수 있습니다.</div>
+            <section class="step-card">
+                <h3 class="step-title">② 자리 정하기</h3>
+                <button id="generateBtn" class="btn btn-primary">두근두근 배치! 🎲</button>
+                <button id="editBtn" class="btn">자리 구조 고치기</button>
+                <button id="downloadBtn" class="btn">사진으로 저장</button>
+            </section>
+
+            <div class="waiting">
+                <h2 class="waiting-title">대기 중 <span id="waitingCount"></span></h2>
                 <div id="unassignedList" class="unassigned-list">
-                    <div class="empty-list-msg">파일을 업로드하면<br>명단이 표시됩니다.</div>
+                    <div class="empty-list-msg">파일을 올리면<br>명단이 여기에 붙어요.</div>
                 </div>
-            </aside>
+                <p class="note">포스트잇을 끌어서 자리에 붙여요.<br>자리를 누르면 다시 여기로 돌아와요.</p>
+            </div>
+        </aside>
 
-            <section class="classroom glass">
+        <main class="sheet main-sheet">
+            <div class="tape tape-pink"></div>
+            <section class="classroom">
+                <header class="room-head">
+                    <h1><mark>강원사대부고</mark> 자리바꾸기</h1>
+                    <span class="room-date" id="roomDate"></span>
+                </header>
                 <div class="seating-grid" id="seatingGrid">
                     <!-- Seats will be generated here -->
-                    <div class="empty-state">파일을 업로드하거나<br>바로 '자리 배치하기'를 눌러주세요!</div>
+                    <div class="empty-state">파일을 올리고<br>'두근두근 배치!'를 눌러 주세요</div>
                 </div>
+                <p class="edit-hint">칸을 눌러 책상을 놓거나 빼요. 다 고쳤으면 '고치기 끝'을 눌러 주세요.</p>
                 <div class="teacher-desk">교탁</div>
-                <div id="classroomObjects" class="classroom-objects"></div>
             </section>
-        </div>
+        </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="script.js"></script>
 </body>
 
