@@ -191,7 +191,7 @@ function downloadTemplate() {
         ['이름', '학생 이름 (필수, 비어 있으면 해당 행은 무시됩니다)'],
         ['같이앉고싶은친구', '이름을 쉼표(,) 또는 공백으로 구분해서 입력'],
         ['기피하는친구', '이름을 쉼표(,) 또는 공백으로 구분해서 입력'],
-        ['희망고정자리', '"앞자리" / "뒷자리" 또는 좌석 번호(예: 7). 번호를 쓰면 그 학생만 해당 자리에 고정됩니다. 비워두면 상관없음'],
+        ['희망고정자리', '"앞자리" / "뒷자리" 또는 좌석 번호(예: 7). 번호를 쓰면 그 학생만 해당 자리에 고정됩니다. "혼자"라고 쓰면 짝꿍 없이 혼자 앉습니다. 비워두면 상관없음'],
         ['좌석 번호', '교실을 바라봤을 때 맨 오른쪽 열이 1번부터, 각 열은 교탁 쪽(아래)에서 위로 센 뒤 왼쪽 열로 넘어갑니다. 자리 구조를 수정하면 번호도 바뀝니다. 화면 각 자리 왼쪽 위의 숫자가 좌석 번호입니다.'],
         ['이유', '자유롭게 입력 (참고용 메모이며 화면에는 표시되지 않습니다)'],
         ['', ''],
@@ -232,6 +232,17 @@ function parseFixedSeatNumber(fixed) {
     return m ? parseInt(m[1], 10) : null;
 }
 
+// 희망고정자리에 "혼자"가 들어 있으면 혼자 앉기를 원하는 학생이다.
+function wantsToSitAlone(student) {
+    return student.fixed.includes('혼자');
+}
+
+// 책상은 두 칸씩 붙어 있다(열 0-1, 2-3, 4-5). 같은 줄에서 짝이 되는 칸의 인덱스, 없으면 -1.
+function deskMateIndex(seatIdx) {
+    const { r, c } = activeSeats[seatIdx];
+    return activeSeats.findIndex(s => s.r === r && s.c === (c ^ 1));
+}
+
 /**
  * Main optimization controller
  */
@@ -252,6 +263,24 @@ function optimizeSeating(studentList, preAssigned = []) {
         seats[seatIdx] = student;
     });
 
+    // --- Hard-lock: 혼자 앉기 ---
+    // 짝꿍 칸이 없거나 비어 있는 자리를 골라 앉히고, 그 짝꿍 칸은 빈자리로 막아 둔다(blocked).
+    const blocked = new Set();
+    shuffleArray(studentList.filter(wantsToSitAlone)).forEach(student => {
+        const isAloneSpot = i => { const mate = deskMateIndex(i); return mate === -1 || seats[mate] === null; };
+        let spot = seats.findIndex(s => s && s.id === student.id);
+        if (spot === -1 || !isAloneSpot(spot)) {
+            if (spot !== -1) seats[spot] = null; // 이미 앉아 있지만 혼자가 아니면 다시 고른다
+            const candidates = seats.map((s, i) => i)
+                .filter(i => seats[i] === null && !blocked.has(i) && isAloneSpot(i));
+            if (candidates.length === 0) return; // 자리가 모자라면 일반 학생으로 배치
+            spot = candidates[Math.floor(Math.random() * candidates.length)];
+            seats[spot] = student;
+        }
+        const mate = deskMateIndex(spot);
+        if (mate !== -1) blocked.add(mate);
+    });
+
     // Build the locked array so SA never swaps these seats
     const lockedSeats = [...seats];
 
@@ -260,13 +289,13 @@ function optimizeSeating(studentList, preAssigned = []) {
     const unassignedStudents = studentList.filter(s => !assignedIds.has(s.id));
 
     // Fill remaining seats greedily based on fixed constraints
-    seats = fillGreedyInitialAssignment(seats, unassignedStudents);
+    seats = fillGreedyInitialAssignment(seats, unassignedStudents, blocked);
 
     // Simulated Annealing Optimization (lockedSeats keeps hard-locked positions)
-    return runSimulatedAnnealing(seats, lockedSeats);
+    return runSimulatedAnnealing(seats, lockedSeats, blocked);
 }
 
-function fillGreedyInitialAssignment(seats, unassigned) {
+function fillGreedyInitialAssignment(seats, unassigned, blocked = new Set()) {
     let remainingUnassigned = [...unassigned];
 
     const groups = { front: [], back: [], normal: [] };
@@ -289,7 +318,7 @@ function fillGreedyInitialAssignment(seats, unassigned) {
         // 학생뿐 아니라 '자리'도 섞어야 한다. 안 그러면 희망자가 한 명일 때
         // 늘 그 구역의 첫 번째 자리로만 배정된다.
         shuffleArray(studentsInGroup);
-        shuffleArray(indices.filter(i => seats[i] === null)).forEach(i => {
+        shuffleArray(indices.filter(i => seats[i] === null && !blocked.has(i))).forEach(i => {
             if (studentsInGroup.length) seats[i] = studentsInGroup.pop();
         });
         // Overflow to normal
@@ -300,7 +329,7 @@ function fillGreedyInitialAssignment(seats, unassigned) {
     fill(zones.back, groups.back);
 
     // Fill rest randomly
-    const remainingEmpty = seats.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
+    const remainingEmpty = seats.map((s, i) => (s === null && !blocked.has(i)) ? i : -1).filter(i => i !== -1);
     groups.normal.sort(() => Math.random() - 0.5);
     groups.normal.forEach(s => {
         if (remainingEmpty.length) {
@@ -312,7 +341,7 @@ function fillGreedyInitialAssignment(seats, unassigned) {
     return seats;
 }
 
-function runSimulatedAnnealing(seats, lockedSeeds) {
+function runSimulatedAnnealing(seats, lockedSeeds, blocked = new Set()) {
     let currentScore = calculateScore(seats);
     let bestScore = currentScore;
     let bestSeats = [...seats];
@@ -324,7 +353,7 @@ function runSimulatedAnnealing(seats, lockedSeeds) {
         const idx1 = Math.floor(Math.random() * TOTAL_SEATS);
         const idx2 = Math.floor(Math.random() * TOTAL_SEATS);
 
-        if (idx1 === idx2 || lockedSeeds[idx1] || lockedSeeds[idx2]) continue;
+        if (idx1 === idx2 || lockedSeeds[idx1] || lockedSeeds[idx2] || blocked.has(idx1) || blocked.has(idx2)) continue;
 
         const s1 = seats[idx1];
         const s2 = seats[idx2];
@@ -591,7 +620,8 @@ async function handleFileLoad() {
             ? await parseXLSX(file) 
             : parseCSV(await file.text());
         
-        initDefaultLayout(students.length);
+        // 혼자 앉는 학생은 짝꿍 칸을 비워야 하므로 그 인원만큼 좌석을 더 만든다.
+        initDefaultLayout(students.length + students.filter(wantsToSitAlone).length);
         currentAssignment = new Array(TOTAL_SEATS).fill(null);
         renderUnassignedList();
         renderSeating(currentAssignment, true);
